@@ -77,6 +77,7 @@
     (add-hook h #'display-line-numbers-mode)
     (add-hook h #'hl-line-mode))
   (add-hook 'prog-mode-hook #'subword-mode)
+  (add-hook 'emacs-lisp-mode-hook #'flymake-mode)
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
   (keymap-set minibuffer-mode-map "<escape>" #'abort-minibuffers)
   (unless noninteractive
@@ -140,6 +141,7 @@
   "b p" #'previous-buffer
   "b r" #'revert-buffer-quick
   "b s" #'scratch-buffer
+  "b u" #'vundo
   "p"   project-prefix-map
   "w"   evil-window-map
   "h"   help-map
@@ -178,12 +180,24 @@
   "t l" #'display-line-numbers-mode
   "t w" #'visual-line-mode
   "t f" #'toggle-frame-fullscreen
+  "t p" #'popper-toggle
+  "t P" #'popper-cycle
+  "a a" #'claude-code-ide-menu
+  "a c" #'claude-code-ide
+  "a A" #'dot/claude-code-ide-agentic
+  "a t" #'claude-code-ide-toggle
+  "a s" #'claude-code-ide-send-prompt
+  "a r" #'claude-code-ide-insert-at-mentioned
+  "a C" #'claude-code-ide-continue
+  "a R" #'claude-code-ide-resume
+  "a q" #'claude-code-ide-stop
   "q q" #'save-buffers-kill-terminal
   "q f" #'delete-frame)
 (evil-define-key '(normal visual) 'global (kbd "<leader>") dot-leader-map)
 (which-key-add-keymap-based-replacements dot-leader-map
   "f" "file" "b" "buffer" "p" "project" "w" "window" "h" "help" "g" "git"
-  "s" "search" "l" "lsp" "e" "errors" "c" "compile" "o" "open" "t" "toggle" "q" "quit")
+  "s" "search" "l" "lsp" "e" "errors" "c" "compile" "o" "open" "t" "toggle"
+  "a" "ai" "q" "quit")
 
 ;;; ---------- completion ----------
 (use-package vertico
@@ -242,6 +256,26 @@
   (add-hook 'completion-at-point-functions #'cape-file)
   (add-hook 'completion-at-point-functions #'cape-dabbrev))
 
+(use-package tempel
+  :bind (("M-+" . tempel-complete) ("M-*" . tempel-insert))
+  :hook ((prog-mode text-mode conf-mode) . dot/tempel-capf)
+  :init
+  (defun dot/tempel-capf ()
+    (add-hook 'completion-at-point-functions #'tempel-expand -1 t)))
+
+;;; ---------- editing ----------
+(use-package vundo :custom (vundo-glyph-alist vundo-unicode-symbols))
+(use-package hl-todo :hook (prog-mode . hl-todo-mode))
+
+(use-package popper
+  :custom
+  (popper-reference-buffers
+   '("\\*Messages\\*" "\\*Warnings\\*" "Output\\*$" "\\*eat\\*" "\\*Async Shell Command\\*"
+     help-mode compilation-mode flymake-diagnostics-buffer-mode))
+  :init
+  (popper-mode)
+  (popper-echo-mode))
+
 ;;; ---------- languages ----------
 (use-package eglot
   :ensure nil
@@ -283,6 +317,25 @@
   :hook (eshell-load . eat-eshell-mode))
 
 (use-package wgrep :custom (wgrep-auto-save-buffer t))
+
+;;; ---------- ai: claude code inside emacs ----------
+(use-package ediff
+  :ensure nil
+  :custom
+  (ediff-window-setup-function #'ediff-setup-windows-plain)
+  (ediff-split-window-function #'split-window-horizontally))
+
+(use-package claude-code-ide
+  :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
+  :custom (claude-code-ide-terminal-backend 'eat)
+  :init
+  (defvar claude-code-ide-cli-extra-flags)
+  (defun dot/claude-code-ide-agentic ()
+    "Start Claude Code with edits auto-accepted; the default session asks before every edit."
+    (interactive)
+    (let ((claude-code-ide-cli-extra-flags "--permission-mode acceptEdits"))
+      (claude-code-ide)))
+  :config (claude-code-ide-emacs-tools-setup))
 
 ;;; ---------- ui ----------
 (setq modus-themes-italic-constructs t
