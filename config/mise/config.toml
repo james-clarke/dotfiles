@@ -1,0 +1,6 @@
+[tools]
+node = "lts"
+uv = "latest"
+"npm:basedpyright" = "latest"
+"npm:typescript-language-server" = "latest"
+"npm:typescript" = "latest"

@@ -1,0 +1,5 @@
+.claude/
+.remember/
+.cc-writes/
+.mcp.json
+*.elc

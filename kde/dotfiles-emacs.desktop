@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=Emacs (dotfiles)
+Exec=emacsclient -c -a ""
+Icon=emacs
+NoDisplay=true

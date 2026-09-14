@@ -1,0 +1,110 @@
+{
+  "env": {
+    "CAVEMAN_DEFAULT_MODE": "lite"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git remote *)",
+      "Bash(git log *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git show *)",
+      "Bash(git branch*)",
+      "Bash(git worktree list*)",
+      "Bash(git stash list*)",
+      "Bash(git blame *)",
+      "Bash(gh api -X GET *)",
+      "Bash(gh api --method GET *)",
+      "Bash(gh pr *)",
+      "Bash(gh issue *)",
+      "Bash(gh run *)",
+      "Bash(gh search *)",
+      "Read(~/**)",
+      "Read(//tmp/**)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebSearch"
+    ],
+    "deny": [
+      "Bash(git push*)"
+    ],
+    "defaultMode": "auto",
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  },
+  "model": "fable[1m]",
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline.sh"
+  },
+  "enabledPlugins": {
+    "typescript-lsp@claude-plugins-official": true,
+    "pyright-lsp@claude-plugins-official": true,
+    "remember@claude-plugins-official": true,
+    "caveman@caveman": true
+  },
+  "extraKnownMarketplaces": {
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    }
+  },
+  "outputStyle": "minimal",
+  "language": "English",
+  "spinnerTipsEnabled": false,
+  "effortLevel": "high",
+  "promptSuggestionEnabled": false,
+  "awaySummaryEnabled": false,
+  "tui": "fullscreen",
+  "prefersReducedMotion": true,
+  "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
+  "theme": "dark",
+  "verbose": false,
+  "preferredNotifChannel": "notifications_disabled",
+  "autoCompactEnabled": false,
+  "terminalProgressBarEnabled": false,
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": true,
+    "failIfUnavailable": false,
+    "filesystem": {
+      "allowWrite": [
+        "~/.cache",
+        "~/.npm"
+      ]
+    },
+    "network": {
+      "tlsTerminate": {},
+      "allowedDomains": [
+        "github.com",
+        "*.github.com",
+        "*.githubusercontent.com",
+        "registry.npmjs.org",
+        "pypi.org",
+        "files.pythonhosted.org"
+      ]
+    },
+    "credentials": {
+      "files": [
+        {
+          "path": "~/.ssh/id_ed25519",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.config/gh/hosts.yml",
+          "mode": "mask",
+          "extract": "oauth_token:\\s*(\\S+)",
+          "injectHosts": [
+            "api.github.com",
+            "github.com"
+          ]
+        }
+      ]
+    }
+  }
+}

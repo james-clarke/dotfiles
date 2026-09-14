@@ -1,0 +1,61 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    container: debian:trixie
+    steps:
+      - run: apt-get update -q && apt-get install -y -q git zsh shellcheck jq fzf emacs-nox ca-certificates
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - run: shellcheck bootstrap.sh install.sh os/*.sh os/macos/*.sh claude/statusline.sh kde/*.sh
+      - run: zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/home.zshenv
+      - run: jq empty claude/settings.json && git config -f config/git/config -l >/dev/null
+      - name: install into a fresh HOME, start the real shell
+        run: |
+          export HOME=/tmp/ci-home; mkdir -p "$HOME"
+          ./install.sh
+          ./install.sh check
+          out=$(timeout 30 zsh -i -c exit 2>&1 | grep -v "can.t change option: zle" || true)
+          [ -z "$out" ] || { echo "$out"; exit 1; }
+      - uses: actions/cache@v4
+        with:
+          path: /tmp/ci-home/.config/emacs/elpa
+          key: elpa-${{ runner.os }}-${{ hashFiles('emacs/init.el') }}
+      - name: load init.el (installs packages), then byte-compile
+        run: |
+          export HOME=/tmp/ci-home
+          xdg='(setq user-emacs-directory (expand-file-name "~/.config/emacs/") package-user-dir (expand-file-name "~/.config/emacs/elpa"))'
+          emacs --batch --eval "$xdg" -l emacs/early-init.el -l emacs/init.el --eval '(message "loaded %d packages" (length package-activated-list))'
+          emacs --batch --eval "$xdg" -l emacs/early-init.el -l emacs/init.el -f batch-byte-compile emacs/early-init.el emacs/init.el
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - run: brew install -q shellcheck emacs
+      - run: shellcheck bootstrap.sh install.sh os/*.sh os/macos/*.sh claude/statusline.sh kde/*.sh
+      - run: zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/home.zshenv
+      - run: plutil -lint os/macos/capslock.plist
+      - name: install into a fresh HOME, start the real shell
+        run: |
+          export HOME="$RUNNER_TEMP/ci-home"; mkdir -p "$HOME"
+          ./install.sh
+          ./install.sh check
+          out=$(zsh -i -c exit 2>&1 | grep -v "can.t change option: zle" || true)
+          [ -z "$out" ] || { echo "$out"; exit 1; }
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/ci-home/.config/emacs/elpa
+          key: elpa-${{ runner.os }}-${{ hashFiles('emacs/init.el') }}
+      - name: load init.el (installs packages), then byte-compile
+        run: |
+          export HOME="$RUNNER_TEMP/ci-home"
+          xdg='(setq user-emacs-directory (expand-file-name "~/.config/emacs/") package-user-dir (expand-file-name "~/.config/emacs/elpa"))'
+          emacs --batch --eval "$xdg" -l emacs/early-init.el -l emacs/init.el --eval '(message "loaded %d packages" (length package-activated-list))'
+          emacs --batch --eval "$xdg" -l emacs/early-init.el -l emacs/init.el -f batch-byte-compile emacs/early-init.el emacs/init.el
