@@ -1,6 +1,6 @@
 # dotfiles
 
-A lean, keyboard-driven development environment for **Debian 13 + KDE Plasma 6** and **macOS**, built around **Emacs 30** (evil, vertico, eglot), a framework-free **zsh**, **Ghostty**, **mise**, git with SSH commit signing, and **Claude Code**. One command bootstraps a fresh machine on either OS; every file is symlinked from this repo so edits are versioned; CI proves the shell and the Emacs config load cleanly on both platforms.
+A lean, keyboard-driven development environment for **Debian 13 + KDE Plasma 6** and **macOS**, built around **Emacs 30** (evil, vertico, eglot), a framework-free **zsh**, **Ghostty**, **mise**, git with SSH commit signing, and **Claude Code** running inside Emacs with every proposed edit shown as an ediff. One command bootstraps a fresh machine on either OS, and asks before touching anything an existing machine already has; every file is symlinked from this repo so edits are versioned; CI proves the shell and the Emacs config load cleanly on both platforms.
 
 Nothing here is tied to a person or an employer. Fork it, change one URL, and it is yours.
 
@@ -11,21 +11,22 @@ Nothing here is tied to a person or an employer. Fork it, change one URL, and it
 1. [What you get](#what-you-get)
 2. [Install: Debian 13 + KDE](#install-debian-13--kde)
 3. [Install: macOS](#install-macos)
-4. [After bootstrap](#after-bootstrap)
-5. [Repository layout](#repository-layout)
-6. [How the pieces fit](#how-the-pieces-fit)
-7. [Emacs](#emacs)
-8. [Shell](#shell)
-9. [Terminal: Ghostty](#terminal-ghostty)
-10. [Git](#git)
-11. [Toolchains: mise](#toolchains-mise)
-12. [KDE](#kde)
-13. [macOS specifics](#macos-specifics)
-14. [Claude Code](#claude-code)
-15. [Upgrading](#upgrading)
-16. [Verification and CI](#verification-and-ci)
-17. [Forking](#forking)
-18. [Troubleshooting](#troubleshooting)
+4. [Existing machine](#existing-machine)
+5. [After bootstrap](#after-bootstrap)
+6. [Repository layout](#repository-layout)
+7. [How the pieces fit](#how-the-pieces-fit)
+8. [Emacs](#emacs)
+9. [Shell](#shell)
+10. [Terminal: Ghostty](#terminal-ghostty)
+11. [Git](#git)
+12. [Toolchains: mise](#toolchains-mise)
+13. [KDE](#kde)
+14. [macOS specifics](#macos-specifics)
+15. [Claude Code](#claude-code)
+16. [Upgrading](#upgrading)
+17. [Verification and CI](#verification-and-ci)
+18. [Forking](#forking)
+19. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -45,7 +46,7 @@ Nothing here is tied to a person or an employer. Fork it, change one URL, and it
 | Toolchains | mise | node, uv, LSP servers; one global config, per-project overrides |
 | Git | delta pager, SSH signing, `gh` credential helper | Signed commits out of the box; no GPG keyrings |
 | Fonts | CommitMono Nerd Font | Ligatures + icons, installed by bootstrap |
-| AI | Claude Code CLI | apt repo on Linux, Homebrew cask on macOS; runs in the terminal, Emacs auto-reverts edited files |
+| AI | Claude Code CLI, `claude-code-ide.el` | apt repo on Linux, Homebrew cask on macOS; runs inside Emacs (`SPC a c`), sees your buffer and diagnostics, proposes edits as ediff sessions; asks before every edit unless you opt into agentic mode |
 | Package managers | apt / Homebrew for everything with a package | Upgrades ride `apt upgrade` / `brew upgrade` |
 
 Package counts stay small on purpose. Emacs pulls two dozen packages (plus their dependencies) from GNU ELPA, NonGNU ELPA and MELPA through the built-in `package.el`. There is no elpaca, straight, doom, or spacemacs layer.
@@ -68,13 +69,14 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
    ```
    What it does, in order:
    - `apt install git gh curl`, then confirms `gh auth status`.
-   - Clones this repo with submodules to `~/dev/dotfiles` (override with `DOTFILES_DIR`).
-   - Runs `install.sh`: symlinks every config file into place, backing up anything that already exists as `*.bak.<timestamp>`, and removes links from earlier runs whose entry has since left the table (recorded in `~/.local/state/dotfiles/links`).
+   - Clones this repo with submodules to `~/dev/dotfiles` (override with `DOTFILES_DIR`); on a re-run it pulls instead.
+   - Runs `preflight.sh`: on a machine that already has shell files, an Emacs config, a git identity or a Claude Code setup, asks what to keep ([Existing machine](#existing-machine)). A fresh box sails through.
+   - Runs `install.sh`: symlinks every config file into place, moving anything that already exists into `~/.local/state/dotfiles/archive/<timestamp>/`, and removes links from earlier runs whose entry has since left the table (recorded in `~/.local/state/dotfiles/links`).
    - Prompts once for git name and email (use your GitHub noreply address), generates an ed25519 SSH key if none exists, registers it on GitHub for authentication and signing, and writes `allowed_signers`. These are the last prompts; everything after runs unattended.
    - Runs `os/linux.sh`:
      - installs everything in `os/apt-packages.txt`;
      - installs `emacs-pgtk` on a Wayland session, `emacs-gtk` on X11;
-     - installs mise via its official installer;
+     - installs mise from its apt repository (enabled through Debian's `extrepo`, which carries the signing key);
      - downloads CommitMono Nerd Font into `~/.local/share/fonts` and refreshes the font cache;
      - installs Ghostty from the community `.deb` build (pinned version) or leaves Konsole in place if no build exists for your Debian codename;
      - enables the Emacs daemon as a systemd user service;
@@ -100,14 +102,16 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
    What it does, in order:
    - Installs Xcode Command Line Tools if missing (the script exits and asks you to re-run once the installer finishes).
    - Installs Homebrew if missing, then `git` and `gh`.
-   - `gh auth login` in the browser if you are not logged in.
+   - `gh auth login` in the browser if you are not logged in (the prompts come through `/dev/tty`, so the `curl | bash` form works). Answer **n** to "Authenticate Git with your GitHub credentials".
    - Clones the repo with submodules to `~/dev/dotfiles`.
-   - Runs `install.sh` (symlinks, backups, stale-link pruning).
+   - Runs `preflight.sh` ([Existing machine](#existing-machine)): an Emacs you already have, a `~/.gitconfig` identity, an SSH key, a `~/.claude` setup are all detected and you choose what happens to each.
+   - Runs `install.sh` (symlinks, archive of anything in the way, stale-link pruning).
    - Prompts for git name and email, generates and registers the SSH key, writes `allowed_signers`. Last prompts; the rest runs unattended.
    - Runs `os/macos.sh`:
      - `brew bundle` against `os/Brewfile`: CLI tools, `emacs-plus@30` (native-comp), Ghostty, Claude Code, the Nerd Font;
      - copies `Emacs.app` to `/Applications` so Spotlight and the Dock can launch it;
-     - starts the Emacs daemon via `brew services` (a launchd agent);
+     - starts the Emacs daemon via `brew services` (a launchd agent); both Emacs steps are skipped if preflight kept an Emacs you already had;
+     - makes `/bin/zsh` the login shell if it is not;
      - installs a LaunchAgent that remaps Caps Lock to Escape at every login (`hidutil`);
      - applies a curated set of `defaults write` (fast key repeat, no press-and-hold accents, no smart quotes, Finder shows extensions and hidden files, Dock autohide);
      - adds `AddKeysToAgent` / `UseKeychain` to `~/.ssh/config`;
@@ -117,6 +121,23 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
 3. Log out and back in (or reboot) so the keyboard remap, key repeat and login shell environment apply everywhere.
 
 4. Continue at [After bootstrap](#after-bootstrap).
+
+---
+
+## Existing machine
+
+`preflight.sh` runs inside `bootstrap.sh` (and stands alone: `~/dev/dotfiles/preflight.sh`). It looks at what the machine already has and asks one question per item; Enter takes the suggested answer. Without a terminal (CI, a truly blind `curl | bash`) it keeps everything and says so. Answers are saved in `~/.local/state/dotfiles/preflight`; delete a line to be asked again. Anything archived lands in `~/.local/state/dotfiles/archive/<timestamp>/` under its original relative path, so restoring is a `mv` back.
+
+| It finds | Choices | Notes |
+|---|---|---|
+| `~/.zshrc`, `~/.zprofile`, `~/.zlogin`, `~/.zshenv`, `~/.oh-my-zsh` | archive (suggested) / keep | zsh reads only `~/.zshenv` from `$HOME` once `ZDOTDIR` is set; kept files are dead weight |
+| `~/.bashrc`, `~/.bash_profile` | keep (suggested) / archive | bash still uses them |
+| `~/.emacs`, `~/.emacs.el`, `~/.emacs.d` | archive (suggested) / keep | Emacs prefers these and ignores `~/.config/emacs` while they exist; keep means the repo config does not load |
+| An Emacs already installed (macOS: `/Applications/Emacs.app`, `brew` formula or cask) | keep (suggested) / replace | keep skips `emacs-plus@30` and the `brew services` daemon; you run `emacs --daemon` your way. replace installs `emacs-plus@30` and prints the uninstall command for the old one; it never uninstalls for you |
+| `~/.gitconfig` with a name and email | adopt (suggested) / keep / new | git reads `~/.gitconfig` after `~/.config/git/config`, so everything in it overrides the repo. adopt copies the identity into `config.local` and archives the file; keep leaves it and its overrides; new archives it and lets bootstrap prompt |
+| SSH keys | report; generate (suggested) / skip when only non-ed25519 keys exist | an existing `~/.ssh/id_ed25519` is always reused. The report says whether `gh` is logged in, whether the key is on GitHub, whether `allowed_signers` is written |
+| `~/.claude/{CLAUDE.md,settings.json,statusline.sh,output-styles,skills}` that are not repo links | keep (suggested) / replace | keep makes `install.sh` skip the whole `claude` group (`DOTFILES_SKIP=claude` does the same by hand). If your `settings.json` has a `hooks` block it says so; the repo copy has none |
+| `~/.nvm`, `~/.pyenv`, `~/.rbenv`, `~/.asdf` | report only | mise covers them; remove when ready |
 
 ---
 
@@ -135,7 +156,7 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
    ~/dev/dotfiles/install.sh check
    ```
 
-4. Open Emacs: `Meta+E` on KDE, Spotlight → "Emacs" on macOS, or `e file` in any terminal. The first launch installs the Emacs packages (one to two minutes, once). Native compilation runs in the background afterwards; ignore the `*Async-native-compile-log*` buffer.
+4. Open Emacs: `Meta+E` on KDE, Spotlight → "Emacs" on macOS, or `e file` in any terminal. The first launch installs the Emacs packages, including a `git clone` of `claude-code-ide.el` (one to two minutes, once). Native compilation runs in the background afterwards; ignore the `*Async-native-compile-log*` buffer.
 
 5. Test commit signing anywhere:
    ```sh
@@ -151,7 +172,8 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
 
 ```
 bootstrap.sh            one-shot installer; OS-independent steps, dispatches to os/
-install.sh              symlinks repo files into $HOME; `install.sh check` verifies
+preflight.sh            existing machine: inventory, ask keep/archive/replace per item, remember answers
+install.sh              symlinks repo files into $HOME; `install.sh check` verifies; DOTFILES_SKIP skips groups
 os/
   linux.sh              Debian 13 + KDE packages, Emacs daemon, Ghostty, Claude Code, fonts
   macos.sh              Homebrew bundle, Emacs daemon, keyboard remap, defaults
@@ -162,6 +184,7 @@ os/
 emacs/
   early-init.el         GC and frame settings applied before the GUI exists
   init.el               the whole Emacs config, one file
+  templates             tempel snippets, a handful per mode
 zsh/
   home.zshenv           the only file in $HOME; sets ZDOTDIR and sources the real .zshenv
   .zshenv               env for every zsh: XDG dirs, PATH, EDITOR
@@ -180,9 +203,10 @@ kde/
 claude/
   CLAUDE.md             global rules for Claude Code
   settings.json         permissions, sandbox, plugins, statusline
-  statusline.sh         model / effort / project / branch / context / cost line
-  output-styles/        "minimal" output style
-  skills/flow/          /flow: ticket dev, PR review, investigate pipelines
+  statusline.sh         model / effort / project / branch / context / rate-limit line
+  output-styles/        "minimal": the opt-in answer-only style for agentic runs
+  skills/investigate/   /investigate: read-only brief of a ticket, PR or area
+  skills/flow/          /flow: ticket dev, PR review, re-review pipelines (agentic)
 .github/workflows/ci.yml  Linux (Debian container) + macOS checks
 ```
 
@@ -192,7 +216,7 @@ claude/
 |---|---|
 | `zsh/home.zshenv` | `~/.zshenv` |
 | `zsh/` | `~/.config/zsh/` |
-| `emacs/early-init.el`, `emacs/init.el` | `~/.config/emacs/` (packages, `custom.el`, `eln-cache` live there too, untracked) |
+| `emacs/early-init.el`, `emacs/init.el`, `emacs/templates` | `~/.config/emacs/` (packages, `custom.el`, `eln-cache` live there too, untracked) |
 | `ghostty/config` | `~/.config/ghostty/config` |
 | `config/git/*` | `~/.config/git/` |
 | `config/mise/config.toml` | `~/.config/mise/config.toml` |
@@ -212,7 +236,7 @@ Files that must not be symlinks (Plasma rewrites its rc files atomically, launch
 
 **Keyboard.** Caps Lock is Escape on both OSes (KDE `kxkbrc`, macOS `hidutil`). Key repeat is fast on both. `Meta+E` (KDE) opens an Emacs frame, `Meta+Return` a terminal, `Meta+D` KRunner. On macOS, Option is Meta in Emacs and Ghostty; Command stays Command.
 
-**Package managers own upgrades.** apt and Homebrew install Emacs, Ghostty, Claude Code, CLI tools. mise installs language toolchains and LSP servers. Emacs `package.el` installs Emacs packages. Nothing is curl-piped except mise's installer on Linux and Homebrew's installer on macOS.
+**Package managers own upgrades.** apt and Homebrew install Emacs, Ghostty, Claude Code, mise, CLI tools. mise installs language toolchains, LSP servers and formatters. Emacs `package.el` installs Emacs packages (`package-vc` for the one that is not on an archive). Nothing is curl-piped except Homebrew's installer on macOS.
 
 ---
 
@@ -222,7 +246,7 @@ Files that must not be symlinks (Plasma rewrites its rc files atomically, launch
 
 `early-init.el` raises the GC threshold and disables `file-name-handler-alist` during startup, then restores sane values; it also turns off the menu bar, tool bar and scroll bars before the first frame exists. `gcmh` manages GC after startup (collects when idle, not while you type).
 
-The daemon runs under `systemctl --user` (Linux; the unit ships with Debian's `emacs-common`) or `brew services` (macOS). Frames connect in about 100 ms. If the daemon dies, any `emacsclient` call restarts it because `ALTERNATE_EDITOR` is empty.
+The daemon runs under `systemctl --user` (Linux; the unit ships with Debian's `emacs-common`, and if bootstrap ran over SSH before your first login it tells you to enable the unit after logging in) or `brew services` (macOS). Frames connect in about 100 ms; the first time you open a new language, `treesit-auto` asks to compile its grammar, a one-off pause. If the daemon dies, any `emacsclient` call restarts it because `ALTERNATE_EDITOR` is empty.
 
 ```sh
 systemctl --user status emacs          # Linux
@@ -232,9 +256,9 @@ emacsclient -e '(kill-emacs)'          # stop the daemon cleanly (either OS)
 
 ### Packages
 
-Built-in and used: `use-package`, `eglot`, `treesit`, `which-key`, `editorconfig`, `project`, `flymake`, `repeat-mode`, `pixel-scroll-precision-mode`, `modus-themes`, `savehist`, `recentf`, `save-place`, `winner`, `dired`, `so-long`, `xterm-mouse-mode`.
+Built-in and used: `use-package`, `eglot`, `treesit`, `which-key`, `editorconfig`, `project`, `flymake`, `ediff`, `repeat-mode`, `pixel-scroll-precision-mode`, `modus-themes`, `savehist`, `recentf`, `save-place`, `winner`, `dired`, `so-long`, `xterm-mouse-mode`.
 
-Installed from ELPA/MELPA: `gcmh`, `evil`, `evil-collection`, `evil-surround`, `vertico`, `orderless`, `marginalia`, `consult`, `consult-eglot`, `embark`, `embark-consult`, `corfu`, `corfu-terminal`, `cape`, `treesit-auto`, `apheleia`, `envrc`, `markdown-mode`, `magit`, `diff-hl`, `eat`, `wgrep`, `mood-line`, `ligature`, and on macOS only `exec-path-from-shell`.
+Installed from ELPA/MELPA: `gcmh`, `evil`, `evil-collection`, `evil-surround`, `vertico`, `orderless`, `marginalia`, `consult`, `consult-eglot`, `embark`, `embark-consult`, `corfu`, `corfu-terminal`, `cape`, `tempel`, `vundo`, `hl-todo`, `popper`, `treesit-auto`, `apheleia`, `envrc`, `markdown-mode`, `magit`, `diff-hl`, `eat`, `wgrep`, `mood-line`, `ligature`, and on macOS only `exec-path-from-shell`. `claude-code-ide` is not on any archive; `use-package :vc` clones it from GitHub through `package-vc` on first start (`M-x package-vc-upgrade` to update it).
 
 Archives are prioritised GNU > NonGNU > MELPA, so a package available on GNU ELPA never comes from MELPA. `custom.el` (written by Emacs, holds `package-selected-packages`) lives in `~/.config/emacs/`, outside the repo.
 
@@ -251,7 +275,7 @@ evil is vim. `C-u` scrolls up, `Y` yanks to end of line, undo is the built-in `u
 | `SPC .` | find file |
 | `SPC /` | ripgrep the project (consult) |
 | `SPC f f` / `f r` / `f s` / `f S` / `f d` / `f i` | find file / recent / save / save all / dired here / open init.el |
-| `SPC b b` / `b d` / `b n` / `b p` / `b r` / `b s` | buffers / kill / next / prev / revert / scratch |
+| `SPC b b` / `b d` / `b n` / `b p` / `b r` / `b s` / `b u` | buffers / kill / next / prev / revert / scratch / undo tree (vundo) |
 | `SPC p …` | the whole `project-prefix-map`: `p f` find file, `p p` switch project, `p b` buffers, `p g` grep, `p c` compile, `p k` kill buffers |
 | `SPC w …` | `evil-window-map`: `w v` / `w s` split, `w h j k l` move, `w q` close, `w o` only |
 | `SPC h …` | `help-map`: `h f` function, `h v` variable, `h k` key, `h m` mode |
@@ -262,16 +286,18 @@ evil is vim. `C-u` scrolls up, `Y` yanks to end of line, undo is the built-in `u
 | `SPC e n` / `e p` / `e l` / `e b` | next error / previous / list (consult) / buffer diagnostics |
 | `SPC c c` / `c r` | project compile / recompile |
 | `SPC o t` / `o T` / `o d` | terminal in project root / terminal here / dired |
-| `SPC t t` / `t l` / `t w` / `t f` | toggle theme / line numbers / word wrap / fullscreen |
+| `SPC t t` / `t l` / `t w` / `t f` / `t p` / `t P` | toggle theme / line numbers / word wrap / fullscreen / popup window / cycle popups |
+| `SPC a c` / `a A` / `a a` / `a t` | Claude Code in this project: start (asks before each edit) / start agentic (`acceptEdits`) / transient menu / show or hide its window |
+| `SPC a s` / `a r` / `a C` / `a R` / `a q` | send a prompt / send the region / continue last session / resume a session / stop |
 | `SPC q q` / `q f` | quit Emacs / close frame |
 
-Non-leader: `C-s` consult-line, `C-.` embark-act, `C-;` embark-dwim, `C-x g` magit, `C-j` / `C-k` move in vertico and corfu popups, `<` narrows a consult list (e.g. `SPC ,` then `< b` for buffers only, `< f` for files), `TAB` completes or indents, `M-x` still works.
+Non-leader: `C-s` consult-line, `C-.` embark-act, `C-;` embark-dwim, `C-x g` magit, `C-j` / `C-k` move in vertico and corfu popups, `<` narrows a consult list (e.g. `SPC ,` then `< b` for buffers only, `< f` for files), `TAB` completes or indents, `M-+` inserts a tempel snippet by name (they also show up in the corfu popup), `M-x` still works. Popups (`*Messages*`, `*Warnings*`, help, compilation, flymake lists, plain `eat` terminals) open in a bottom window that `SPC t p` hides and brings back.
 
 ### Languages
 
-`treesit-auto` maps file types to tree-sitter modes and offers to install a grammar the first time you open a language (grammars compile with the system `cc`, which apt and Xcode CLT provide). eglot starts automatically in Python, JavaScript/TypeScript, Rust, Go, C/C++, Bash and Ruby buffers when a server is on PATH. `basedpyright` and `typescript-language-server` come from mise. Add others per project with `mise use`.
+`treesit-auto` maps file types to tree-sitter modes and offers to install a grammar the first time you open a language (grammars compile with the system `cc`, which apt and Xcode CLT provide). eglot starts automatically in Python, JavaScript/TypeScript, Rust, Go, C/C++, Bash and Ruby buffers when a server is on PATH. `basedpyright` and `typescript-language-server` come from mise; for the other languages install the server yourself (`rust-analyzer`, `gopls`, `clangd`, `bash-language-server`, `ruby-lsp`), globally with `mise use -g` or per project with `mise use`.
 
-apheleia formats on save with whatever formatter it knows for the mode (`black`/`ruff`, `prettier`, `gofmt`, `rustfmt`, `shfmt`...) if that binary is on PATH; missing formatter means no-op, never an error. envrc loads `.envrc` per buffer so project-local tools win.
+apheleia formats on save with whatever formatter it knows for the mode if that binary is on PATH; missing formatter means no-op, never an error. mise installs `ruff`, `prettier` and `shfmt` globally, so Python, JS/TS/JSON/CSS/Markdown and shell format out of the box; `gofmt` and `rustfmt` arrive with their toolchains. envrc loads `.envrc` per buffer so project-local tools win. Note that a project's `.mise.toml` alone is invisible to Emacs; add an `.envrc` containing `use mise` next to it and the project's versions apply inside Emacs too.
 
 ### Look
 
@@ -383,17 +409,33 @@ Plasma 6 removed the "Custom Shortcuts" module; launching a command from a short
 
 ## Claude Code
 
-`claude/settings.json` is symlinked to `~/.claude/settings.json`:
+The setup has two postures. The default one is for learning: Claude explains, you decide, every edit is a diff you accept or reject. The other is agentic and one keystroke away.
 
-- **Permissions**: read-only git and `gh` commands are pre-allowed; `git push` is denied (Claude prints the command, you run it). `defaultMode` is `auto`.
+### Default: learn
+
+- `defaultMode` is `default` (Manual): every file edit and every non-read-only command asks first. `git push` is denied outright; Claude prints the command, you run it.
+- `outputStyle` is Claude Code's built-in **Learning**: it explains the why as it goes and leaves `TODO(human)` stubs for the parts worth writing yourself.
+- `claude/CLAUDE.md` says the rest: a question gets the approach and the tradeoffs, not a diff; edits only when you say build; small edits, one at a time; plan mode first for anything wide.
+- `/investigate <ticket | PR | path | topic>` builds a read-only brief (ticket, PR threads, code map with `file:line`, prior art, open questions) and stops. Ask it things; when you say build it hands off to `/flow dev`.
+
+### Inside Emacs
+
+`claude-code-ide.el` runs the real Claude Code TUI in an `eat` window, so every plugin, skill and the statusline work unchanged, and it registers Emacs as Claude's IDE over MCP: Claude sees the current buffer and selection, can read flymake diagnostics, xref, imenu and project info, and **every edit it proposes opens as an ediff session** in Emacs: buffer A is your file, buffer B is Claude's version. `n`/`p` walk the hunks; edit B if you want it different; `q` closes the session and asks `y`/`n`, and whatever B contains goes back to Claude to apply. That is the whole review loop, and it never leaves the editor.
+
+`SPC a c` starts Claude for the current project in the default posture. `SPC a A` starts it agentic (`--permission-mode acceptEdits`). `SPC a r` sends the region into the prompt, `SPC a s` sends a typed prompt, `SPC a t` hides and shows the window, `SPC a a` opens the transient menu with everything else. Shift+Tab inside the Claude window cycles the permission mode mid-session.
+
+Outside Emacs, `claude` in Ghostty is the same thing without the ediff loop; `global-auto-revert-mode` refreshes buffers and magit shows the diff. `claude-build` is an alias for `claude --permission-mode acceptEdits`.
+
+### Opt-in: agentic
+
+`SPC a A` or `claude-build` starts with edits auto-accepted; `/config` → Output style → **Minimal** (`claude/output-styles/minimal.md`, answer-first, no narration) fits that mode. `/flow dev <ticket>`, `/flow pr <PR#>` and `/flow repr <PR#>` are the pipelines for it: ticket development with a plan gate and a staged-diff gate, PR review and re-review with adversarial multi-agent lenses. They are framework-agnostic and read each repo's `AGENTS.md`.
+
+### The rest of `settings.json`
+
 - **Sandbox**: on, with network egress limited to GitHub, npm and PyPI; the private SSH key is hidden; the `gh` token is masked and injected only for GitHub hosts. Bubblewrap (Linux) or Seatbelt (macOS) provides the isolation.
-- **Plugins**: `typescript-lsp`, `pyright-lsp`, `remember`, `caveman`. Install them once with the `jq | xargs` one-liner in [After bootstrap](#after-bootstrap).
+- **Plugins**: `typescript-lsp`, `pyright-lsp`, `remember`, `caveman`. Install them once with the `jq | xargs` one-liner in [After bootstrap](#after-bootstrap). `caveman` comes from a third-party marketplace (`JuliusBrussee/caveman`); drop both entries if you do not want it.
 - **Statusline**: `claude/statusline.sh` shows exceptions only: model, `project:branch`, effort when it is not `high`, context usage with a hand-off warning at 25 %, and the 5h/7d rate-limit windows once they pass 50 %. One `jq` call, plus `git` for the branch.
-- **Output style** `minimal`: answer first, no preamble, no recap.
-
-`claude/CLAUDE.md` holds the global working rules (small diffs, plan mode for wide changes, no unsolicited tests, conventional commits, model tiering for subagents, context hygiene). `claude/skills/flow` is a `/flow` skill with ticket-development, PR-review, re-review and investigate pipelines that use adversarial multi-agent review; it is framework-agnostic and reads each repo's `AGENTS.md` for the rules that matter there.
-
-Claude runs in a terminal, not inside Emacs. Emacs has `global-auto-revert-mode`, so files Claude edits update in your buffers immediately; magit shows the diff.
+- **Not managed**: `~/.claude/hooks` and `settings.local.json` are yours; `install.sh` never touches them, and preflight offers to keep an existing `~/.claude` whole.
 
 ---
 
@@ -404,14 +446,14 @@ Claude runs in a terminal, not inside Emacs. Emacs has `global-auto-revert-mode`
 | Everything system-level, Linux | `sudo apt update && sudo apt upgrade` (Emacs, Ghostty stays pinned, Claude Code, CLI tools) |
 | Everything system-level, macOS | `brew update && brew upgrade && brew bundle --file ~/dev/dotfiles/os/Brewfile` |
 | Ghostty on Linux | bump `GHOSTTY_TAG` in `os/linux.sh`, remove the package, re-run `os/linux.sh` |
-| Emacs packages | `M-x package-upgrade-all`, then `M-x package-autoremove` |
+| Emacs packages | `M-x package-upgrade-all`, then `M-x package-autoremove`; `M-x package-vc-upgrade` for `claude-code-ide` |
 | Toolchains and LSP servers | `mise upgrade` |
 | zsh plugins | `git -C ~/dev/dotfiles submodule update --remote` |
 | The dotfiles themselves | `git -C ~/dev/dotfiles pull && ~/dev/dotfiles/install.sh check` |
 | KDE settings after editing `kde/apply.sh` | re-run it, log out and in |
 | macOS defaults after editing | re-run `os/macos/defaults.sh` |
 
-Re-running `bootstrap.sh` is always safe; every step checks before it acts.
+Re-running `bootstrap.sh` is always safe; it pulls the repo, every step checks before it acts, and preflight only asks about things it has not asked about before.
 
 ---
 
@@ -419,8 +461,10 @@ Re-running `bootstrap.sh` is always safe; every step checks before it acts.
 
 `.github/workflows/ci.yml` runs on every push:
 
-- **Linux job** in a `debian:trixie` container (the exact target): `shellcheck` on every script, `zsh -n` on every zsh file, `jq` on `settings.json`, `git config` parse, then a full `install.sh` into a fresh `HOME`, `install.sh check`, an interactive zsh start that must print nothing, and finally Emacs 30 loads `early-init.el` + `init.el` in batch mode, installing every package from the real archives (ELPA cache keyed on `init.el`), and byte-compiles both files.
-- **macOS job**: shellcheck, `zsh -n`, `plutil -lint` on the LaunchAgent, `install.sh` + `check` into a fresh `HOME`, interactive zsh start, then the same Emacs batch load and byte-compile with Homebrew's `emacs` formula, so the `darwin` branch of `init.el` runs for real. The Brewfile itself is validated by use.
+- **Linux job** in a `debian:trixie` container (the exact target): installs every package in `os/apt-packages.txt` (a wrong name fails here, not on your new box), `shellcheck` on every script, `zsh -n` on every zsh file, `jq` on `settings.json`, `git config` parse, `preflight.sh` without a tty against a fake `~/.emacs.d` and `~/.gitconfig` (both must survive), then `install.sh` twice into a fresh `HOME` with a file in the way (archive path, then the stale-link path), `install.sh check`, an interactive zsh start that must print nothing, and finally Emacs 30 loads `early-init.el` + `init.el` in batch mode, installing every package from the real archives and cloning `claude-code-ide` (ELPA cache keyed on `init.el`), and byte-compiles both files.
+- **macOS job**: `brew bundle` against the real `os/Brewfile` with `emacs-plus@30` (a source build) and the casks skipped, so every formula and tap name resolves; then shellcheck, `zsh -n`, `plutil -lint` on the LaunchAgent, the same preflight and double `install.sh`, interactive zsh start, and the same Emacs batch load and byte-compile with Homebrew's `emacs` formula, so the `darwin` branch of `init.el` runs for real.
+
+Not covered: `bootstrap.sh` end to end (needs a GitHub login), `os/linux.sh`, `os/macos.sh`, `kde/apply.sh`, and anything that needs a display.
 
 Locally: `~/dev/dotfiles/install.sh check` after anything that might have replaced a symlink.
 
@@ -431,8 +475,9 @@ Locally: `~/dev/dotfiles/install.sh check` after anything that might have replac
 1. Fork on GitHub, then in `bootstrap.sh` change `REPO_URL`, or run it with `DOTFILES_REPO=https://github.com/you/dotfiles`.
 2. Edit `os/apt-packages.txt` and `os/Brewfile` to taste.
 3. Adjust `kde/apply.sh` and `os/macos/defaults.sh`; both are lists of individual settings, remove lines you do not want.
-4. `claude/settings.json`: change or drop `model`, plugins, allowed network domains.
-5. Nothing else references a person: git identity is prompted, SSH keys are generated, the `hostname` names the GitHub key.
+4. `claude/settings.json`: change or drop `model` (it names a specific tier), the plugins (`caveman` and its `extraKnownMarketplaces` entry point at a third-party GitHub repo), the allowed network domains, and `Read(~/**)` if you want Claude confined to your working directories.
+5. `claude/skills/flow` assumes a ticket tracker reachable over MCP and `gh`; `/investigate` works without either. Delete what you do not use.
+6. Nothing else references a person: git identity is prompted or adopted from your `~/.gitconfig`, SSH keys are generated, the `hostname` names the GitHub key.
 
 ---
 
@@ -442,11 +487,15 @@ Locally: `~/dev/dotfiles/install.sh check` after anything that might have replac
 
 **`compinit: insecure directories` on macOS.** `os/macos.sh` fixes permissions; re-run it, or `compaudit | xargs chmod g-w,o-w`.
 
-**`emacsclient: can't find socket`.** The daemon is not running and `ALTERNATE_EDITOR` is not empty in this environment. `systemctl --user restart emacs` (Linux) or `brew services restart emacs-plus@30` (macOS), or just `emacsclient -a '' -c`.
+**`emacsclient: can't find socket`.** The daemon is not running and `ALTERNATE_EDITOR` is not empty in this environment. `systemctl --user restart emacs` (Linux) or `brew services restart emacs-plus@30` (macOS), or just `emacsclient -a '' -c`. If bootstrap ran over SSH before your first graphical login, the unit was never enabled: `systemctl --user enable --now emacs.service`.
+
+**Emacs ignores the repo config.** A `~/.emacs`, `~/.emacs.el` or `~/.emacs.d` exists; Emacs loads that and never looks at `~/.config/emacs`. Re-run `preflight.sh` and archive it, or move it yourself.
+
+**Claude in Emacs: "claude not found" or no ediff.** The daemon's PATH must contain `claude` (`emacsclient -e '(executable-find "claude")'`). On macOS `exec-path-from-shell` copies it from a login shell; on Linux it is `/usr/bin/claude` from apt. No ediff means the Claude session was started outside Emacs; start it with `SPC a c` so it connects to Emacs over MCP.
 
 **Emacs starts but packages are missing.** First launch needs network to ELPA/MELPA. `M-x package-refresh-contents`, then `M-x package-install-selected-packages`. Corporate proxies: set `url-proxy-services` in `custom.el`.
 
-**eglot: "no server".** The server binary is not on the daemon's PATH. `mise ls` shows what is installed; `mise install` if needed; `emacsclient -e '(getenv "PATH")'` shows what the daemon sees. Restart the daemon after installing a new tool.
+**eglot: "no server".** Either the server was never installed (only `basedpyright` and `typescript-language-server` ship by default; `mise use -g rust-analyzer` and friends for the rest) or it is not on the daemon's PATH. `mise ls` shows what is installed; `emacsclient -e '(getenv "PATH")'` shows what the daemon sees. Restart the daemon after installing a new tool.
 
 **Fonts look wrong in Emacs.** `fc-list | grep -i commitmono` (Linux) or Font Book (macOS) must list "CommitMono Nerd Font". Re-run `os/linux.sh` / `brew install --cask font-commit-mono-nerd-font`.
 
