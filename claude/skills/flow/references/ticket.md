@@ -35,7 +35,7 @@ STOP for the user's OK on the ledger, then run steps 2-5 against it. Every row m
 ## 5. Ship prep
 
 - Draft the PR title and body — or, in corrections mode, the reply-to-reviewer comment set — in the user's voice: human-typed, lowercase and fragments fine, no dash punctuation, no filler.
-- Print the exact `git push` / `gh pr create` commands, never run them (settings.json denies `git push`).
+- Print the exact `git push` command and the PR title/body for the user to open the PR; never push (settings.json denies `git push`).
 - Optional: the repo's QA guide, if it has one.
 - Update flow-state at each boundary; delete it on ship.
 

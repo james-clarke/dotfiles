@@ -12,7 +12,6 @@ touch "$DECISIONS"
 
 step() { printf '\n\033[1;34m== %s\033[0m\n' "$*"; }
 decided() { sed -n "s|^$1=||p" "$DECISIONS" | tail -1; }
-ghok() { command -v gh >/dev/null && gh auth status >/dev/null 2>&1; }
 
 # ask KEY QUESTION DEFAULT "safe-opt opt2 ..." -> prints the answer. Remembered answers are reused; no tty picks the first option.
 ask() {
@@ -81,40 +80,8 @@ if [ "$(uname -s)" = Darwin ] && command -v brew >/dev/null && ! brew list --for
   fi
 fi
 
-step "git identity"
-LOCAL="$HOME/.config/git/config.local"
-if [ -z "$(git config -f "$LOCAL" user.email 2>/dev/null || true)" ] && [ -f "$HOME/.gitconfig" ]; then
-  name=$(git config -f "$HOME/.gitconfig" user.name || true)
-  email=$(git config -f "$HOME/.gitconfig" user.email || true)
-  if [ -n "$email" ]; then
-    case $(ask git/identity "~/.gitconfig has \"$name <$email>\"; git reads it after the repo config, so it overrides config/git/config" adopt "keep adopt new") in
-      adopt)
-        mkdir -p "$(dirname "$LOCAL")"
-        git config -f "$LOCAL" user.name "$name"
-        git config -f "$LOCAL" user.email "$email"
-        git config -f "$LOCAL" user.signingkey '~/.ssh/id_ed25519.pub'
-        archive "$HOME/.gitconfig" ;;
-      keep) echo "kept       ~/.gitconfig  (everything in it overrides config/git/config)" ;;
-      new)  archive "$HOME/.gitconfig"; echo "bootstrap will prompt for a new identity" ;;
-    esac
-  fi
-fi
-
-step "ssh + github"
-if ghok; then echo "ok         gh is logged in"; else echo "todo       gh not logged in (bootstrap does it)"; fi
-KEY="$HOME/.ssh/id_ed25519"
-if [ -f "$KEY" ]; then
-  echo "ok         $KEY exists and will be reused"
-  if ghok; then
-    if gh ssh-key list 2>/dev/null | grep -qF "$(cut -d' ' -f2 "$KEY.pub")"; then echo "ok         key registered on GitHub"; else echo "todo       key not on GitHub (bootstrap registers it)"; fi
-  fi
-elif ls "$HOME"/.ssh/id_* >/dev/null 2>&1; then
-  case $(ask ssh/key "other SSH keys exist but no id_ed25519; the repo uses id_ed25519 for GitHub auth and commit signing" generate "generate skip") in
-    generate) echo "bootstrap generates and registers id_ed25519" ;;
-    skip)     echo "skipped    no key generated; commit signing stays off until you set user.signingkey" ;;
-  esac
-fi
-if grep -qs . "$HOME/.config/git/allowed_signers"; then echo "ok         allowed_signers present"; else echo "todo       allowed_signers (bootstrap writes it)"; fi
+step "git"
+[ -f "$HOME/.gitconfig" ] && echo "note       ~/.gitconfig is read after ~/.config/git/config, so everything in it (identity, signing, helpers) overrides the repo defaults; it is left alone"
 
 step "claude code"
 have=""

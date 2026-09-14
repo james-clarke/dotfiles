@@ -1,7 +1,6 @@
 zsh
 git
 git-delta
-gh
 jq
 curl
 gnupg

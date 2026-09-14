@@ -35,7 +35,7 @@ Inference signals, gathered in parallel and cheap:
 | Signal | Kind |
 |---|---|
 | branch carries a ticket key (`ABC-1234`) and the user authored it | ticket dev |
-| `gh pr view <target> --json author,state,reviews` = teammate's PR, no prior review by the user | fresh review |
+| the PR belongs to a teammate, no prior review by the user | fresh review |
 | teammate's PR, user has prior review or comments on it | re-review |
 | user's own PR with reviewer feedback since the last commit | ticket dev, corrections mode |
 
@@ -46,7 +46,7 @@ One kind fits = state the routing in one line and proceed. Signals conflict = `A
 Build the **context brief**: a structured block injected into whichever pipeline runs. Fan heavy fetching to subagents (haiku for pure fetch/search); the brief itself stays under ~60 lines.
 
 - **Ticket** — key (branch / PR title / args), summary and acceptance criteria via the issue-tracker MCP (`ToolSearch` first), plus ALL ticket comments.
-- **PR**, when one exists — state, mergeable, CI rollup, and ALL review threads + inline comments (`gh pr view --json reviews,comments`, plus `gh api -X GET repos/{owner}/{repo}/pulls/{n}/comments` for inline threads and their resolution state). Split the user's own prior comments from everyone else's.
+- **PR**, when one exists — state, mergeable, CI rollup, and ALL review threads + inline comments with their resolution state (via the hosting platform's MCP if one is configured, otherwise ask the user to paste them). Split the user's own prior comments from everyone else's.
 - **Diff** — `--stat`, touched modules, list of module `AGENTS.md` files to load.
 - **History flags** — `RE-REVIEW` (user already reviewed this PR; attach their prior asks as a list) or `CORRECTIONS` (user's own PR has unaddressed reviewer feedback; attach each item).
 

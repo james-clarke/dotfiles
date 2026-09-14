@@ -12,7 +12,7 @@ Set by the calling pipeline:
 
 | Scope | Source |
 |---|---|
-| `pr <N>` | `gh pr diff <N>` + `gh pr view <N> --json title,body` |
+| `pr <N>` | the PR diff plus its title and body |
 | `uncommitted` | staged + unstaged + untracked vs `HEAD` |
 | `branch` | `git diff <default-branch>...HEAD` |
 | explicit range (re-review) | `git diff <sha>...HEAD` |
@@ -74,4 +74,4 @@ End with a verdict: `merge-ready` / `needs fixes (N)` / `blocked (critical)`. Ze
 
 For a teammate's PR, convert each surviving finding into a draft PR comment in the user's voice: reads human-typed, lowercase and fragments fine, no dash punctuation, problem stated once, fix given only when obvious (never "consider maybe..."), zero praise filler, style nits omitted entirely.
 
-Output the drafts mapped to `file:line`. The user posts them — never post via `gh`.
+Output the drafts mapped to `file:line`. The user posts them — never post them yourself.

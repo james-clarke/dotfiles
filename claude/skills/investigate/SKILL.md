@@ -17,7 +17,7 @@ A reading posture, not a doing posture. Nothing here edits a file, drafts a diff
 Target = `$ARGUMENTS`. Fan heavy fetching to subagents (`model: "haiku"` for pure fetch/search); the brief itself stays under ~60 lines.
 
 - **Ticket**, when the target is a key — summary and acceptance criteria via the issue-tracker MCP (`ToolSearch` first), plus ALL comments.
-- **PR**, when one exists — state, mergeable, CI rollup, ALL review threads and inline comments (`gh pr view --json reviews,comments`, `gh api -X GET repos/{owner}/{repo}/pulls/{n}/comments`). Split the user's own comments from everyone else's.
+- **PR**, when one exists — state, mergeable, CI rollup, ALL review threads and inline comments (via the hosting platform's MCP if one is configured, otherwise ask the user to paste them). Split the user's own comments from everyone else's.
 - **Diff** — `--stat`, touched modules, list of module `AGENTS.md` files that plausibly bind.
 - **Path or topic** — skip the tracker; start from the code layer below.
 

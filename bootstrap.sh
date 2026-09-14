@@ -1,35 +1,48 @@
 #!/usr/bin/env bash
 # Fresh Debian 13 + KDE or macOS box -> working dev slate. Idempotent; re-run freely.
+# Expects git with your identity set and SSH access to GitHub; stops and says so otherwise.
 #   curl -fsSL https://raw.githubusercontent.com/james-clarke/dotfiles/master/bootstrap.sh | bash
-# Forks: DOTFILES_REPO=https://github.com/you/dotfiles bash bootstrap.sh
+# Forks: DOTFILES_REPO=git@github.com:you/dotfiles bash bootstrap.sh
 set -euo pipefail
 
-REPO_URL=${DOTFILES_REPO:-https://github.com/james-clarke/dotfiles}
+REPO_URL=${DOTFILES_REPO:-git@github.com:james-clarke/dotfiles}
 DEST=${DOTFILES_DIR:-$HOME/dev/dotfiles}
 BIN="$HOME/.local/bin"
 OS=$(uname -s)
 
 step() { printf '\n\033[1;34m== %s\033[0m\n' "$*"; }
 
+step "git + ssh"
+missing=""
+command -v git >/dev/null || missing="$missing git"
+{ [ -n "$(git config --global user.name 2>/dev/null)" ] && [ -n "$(git config --global user.email 2>/dev/null)" ]; } || missing="$missing identity"
+out=$(ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -T git@github.com 2>&1 || true)
+case $out in *"successfully authenticated"*) ;; *) missing="$missing ssh" ;; esac
+if [ -n "$missing" ]; then
+  cat <<EOF
+git is not set up on this machine (missing:$missing). Do that first, then re-run:
+  1. git                Debian: sudo apt install git      macOS: xcode-select --install
+  2. identity           git config --global user.name "Your Name"
+                        git config --global user.email "you@users.noreply.github.com"
+  3. SSH key on GitHub  https://docs.github.com/authentication/connecting-to-github-with-ssh
+                        ssh -T git@github.com   # must answer "successfully authenticated"
+                        (a passphrase-protected key needs ssh-agent loaded first: ssh-add)
+EOF
+  exit 1
+fi
+echo "ok         $(git config --global user.name) <$(git config --global user.email)>, SSH to GitHub works"
+
 step "prerequisites"
 case $OS in
   Linux)
-    sudo apt-get update -q
-    sudo apt-get install -y -q git gh curl ;;
+    command -v curl >/dev/null || { sudo apt-get update -q; sudo apt-get install -y -q curl; } ;;
   Darwin)
     xcode-select -p >/dev/null 2>&1 || { xcode-select --install; echo "finish the CLT install, then re-run"; exit 1; }
     BREW=/opt/homebrew/bin/brew; [ -x "$BREW" ] || BREW=/usr/local/bin/brew
     [ -x "$BREW" ] || { installer=$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh); /bin/bash -c "$installer"; }
-    eval "$("$BREW" shellenv)"
-    brew install -q git gh ;;
+    eval "$("$BREW" shellenv)" ;;
   *) echo "unsupported OS: $OS"; exit 1 ;;
 esac
-
-step "gh auth"
-if ! gh auth status >/dev/null 2>&1; then
-  { : </dev/tty; } 2>/dev/null || { echo "not logged in and no terminal. Run: gh auth login -h github.com -p https -w -s admin:public_key  (answer n to git auth)"; exit 1; }
-  gh auth login -h github.com -p https -w -s admin:public_key </dev/tty
-fi
 
 step "clone"
 if [ -f "$DEST/install.sh" ]; then
@@ -37,39 +50,14 @@ if [ -f "$DEST/install.sh" ]; then
   git -C "$DEST" submodule update --init -q
 else
   mkdir -p "$(dirname "$DEST")"
-  git -c credential.helper='!gh auth git-credential' clone -q --recurse-submodules "$REPO_URL" "$DEST"
+  git clone -q --recurse-submodules "$REPO_URL" "$DEST"
 fi
 
 step "preflight (existing files and tools)"
 "$DEST/preflight.sh"
-decided() { sed -n "s|^$1=||p" "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/preflight" 2>/dev/null | tail -1; }
 
 step "symlinks"
 "$DEST/install.sh"
-
-step "git identity + ssh signing (last prompts; the rest runs unattended)"
-LOCAL="$HOME/.config/git/config.local"
-if [ -z "$(git config -f "$LOCAL" user.email || true)" ]; then
-  read -rp "git user.name:  " name  </dev/tty
-  read -rp "git user.email (GitHub noreply address keeps commits private): " email </dev/tty
-  git config -f "$LOCAL" user.name "$name"
-  git config -f "$LOCAL" user.email "$email"
-fi
-email=$(git config -f "$LOCAL" user.email)
-KEY="$HOME/.ssh/id_ed25519"
-if [ "$(decided ssh/key)" = skip ]; then
-  echo "ssh key skipped per preflight; signing stays off"
-else
-  [ -f "$KEY" ] || ssh-keygen -t ed25519 -C "$email" -f "$KEY"
-  SIGNERS="$HOME/.config/git/allowed_signers"
-  line="$email $(cut -d' ' -f1,2 "$KEY.pub")"
-  grep -qxF "$line" "$SIGNERS" 2>/dev/null || printf '%s\n' "$line" >> "$SIGNERS"
-  gh ssh-key list >/dev/null 2>&1 || gh auth refresh -h github.com -s admin:public_key
-  if ! gh ssh-key list | grep -qF "$(cut -d' ' -f2 "$KEY.pub")"; then
-    gh ssh-key add "$KEY.pub" --type authentication --title "$(hostname)"
-    gh ssh-key add "$KEY.pub" --type signing --title "$(hostname) signing"
-  fi
-fi
 
 case $OS in
   Linux)  "$DEST/os/linux.sh" ;;

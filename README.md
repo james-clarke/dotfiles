@@ -1,6 +1,6 @@
 # dotfiles
 
-A lean, keyboard-driven development environment for **Debian 13 + KDE Plasma 6** and **macOS**, built around **Emacs 30** (evil, vertico, eglot), a framework-free **zsh**, **Ghostty**, **mise**, git with SSH commit signing, and **Claude Code** running inside Emacs with every proposed edit shown as an ediff. One command bootstraps a fresh machine on either OS, and asks before touching anything an existing machine already has; every file is symlinked from this repo so edits are versioned; CI proves the shell and the Emacs config load cleanly on both platforms.
+A lean, keyboard-driven development environment for **Debian 13 + KDE Plasma 6** and **macOS**, built around **Emacs 30** (evil, vertico, eglot), a framework-free **zsh**, **Ghostty**, **mise**, git, and **Claude Code** running inside Emacs with every proposed edit shown as an ediff. One command bootstraps a fresh machine on either OS, and asks before touching anything an existing machine already has; every file is symlinked from this repo so edits are versioned; CI proves the shell and the Emacs config load cleanly on both platforms.
 
 Nothing here is tied to a person or an employer. Fork it, change one URL, and it is yours.
 
@@ -44,7 +44,7 @@ Nothing here is tied to a person or an employer. Fork it, change one URL, and it
 | Shell | zsh, no framework | `~/.zshenv` stub + `~/.config/zsh/`; plugins as git submodules; cached tool init |
 | Terminal | Ghostty | One config file for KDE and macOS; GPU fast; Meta passes through cleanly |
 | Toolchains | mise | node, uv, LSP servers; one global config, per-project overrides |
-| Git | delta pager, SSH signing, `gh` credential helper | Signed commits out of the box; no GPG keyrings |
+| Git | delta pager, sane defaults | Identity, keys and signing stay whatever the machine already has |
 | Fonts | CommitMono Nerd Font | Ligatures + icons, installed by bootstrap |
 | AI | Claude Code CLI, `claude-code-ide.el` | apt repo on Linux, Homebrew cask on macOS; runs inside Emacs (`SPC a c`), sees your buffer and diagnostics, proposes edits as ediff sessions; asks before every edit unless you opt into agentic mode |
 | Package managers | apt / Homebrew for everything with a package | Upgrades ride `apt upgrade` / `brew upgrade` |
@@ -57,22 +57,17 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
 
 1. Install Debian 13 from the netinst with **KDE Plasma** and **standard system utilities**. Log in once so Plasma creates its config directories. A Wayland session is recommended (the default); the bootstrap picks the matching Emacs build.
 
-2. Authenticate GitHub. Answer **n** to "Authenticate Git with your GitHub credentials" (the repo's git config already sets the helper).
-   ```sh
-   sudo apt install gh
-   gh auth login -h github.com -p https -w -s admin:public_key
-   ```
+2. Set up git the way you normally would: `sudo apt install git`, `git config --global user.name` / `user.email`, and an SSH key registered on GitHub ([guide](https://docs.github.com/authentication/connecting-to-github-with-ssh)). `ssh -T git@github.com` must answer "successfully authenticated". The bootstrap checks all three and stops with the same instructions if any is missing; it never creates keys or touches `~/.gitconfig`.
 
 3. Run the bootstrap. It is idempotent; re-run it whenever you like.
    ```sh
    curl -fsSL https://raw.githubusercontent.com/james-clarke/dotfiles/master/bootstrap.sh | bash
    ```
    What it does, in order:
-   - `apt install git gh curl`, then confirms `gh auth status`.
-   - Clones this repo with submodules to `~/dev/dotfiles` (override with `DOTFILES_DIR`); on a re-run it pulls instead.
-   - Runs `preflight.sh`: on a machine that already has shell files, an Emacs config, a git identity or a Claude Code setup, asks what to keep ([Existing machine](#existing-machine)). A fresh box sails through.
+   - Checks git, your identity and SSH access to GitHub, then `apt install curl` if needed.
+   - Clones this repo over SSH with submodules to `~/dev/dotfiles` (override with `DOTFILES_DIR`); on a re-run it pulls instead.
+   - Runs `preflight.sh`: on a machine that already has shell files, an Emacs config or a Claude Code setup, asks what to keep ([Existing machine](#existing-machine)). A fresh box sails through.
    - Runs `install.sh`: symlinks every config file into place, moving anything that already exists into `~/.local/state/dotfiles/archive/<timestamp>/`, and removes links from earlier runs whose entry has since left the table (recorded in `~/.local/state/dotfiles/links`).
-   - Prompts once for git name and email (use your GitHub noreply address), generates an ed25519 SSH key if none exists, registers it on GitHub for authentication and signing, and writes `allowed_signers`. These are the last prompts; everything after runs unattended.
    - Runs `os/linux.sh`:
      - installs everything in `os/apt-packages.txt`;
      - installs `emacs-pgtk` on a Wayland session, `emacs-gtk` on X11;
@@ -93,30 +88,29 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
 
 ## Install: macOS
 
-1. Sign in to GitHub in a browser, then open Terminal.
+1. Have git set up: `xcode-select --install` provides it, then `git config --global user.name` / `user.email` and an SSH key registered on GitHub ([guide](https://docs.github.com/authentication/connecting-to-github-with-ssh)). `ssh -T git@github.com` must answer "successfully authenticated". The bootstrap checks and stops otherwise; it never creates keys or touches `~/.gitconfig`.
 
 2. Run the bootstrap.
    ```sh
    curl -fsSL https://raw.githubusercontent.com/james-clarke/dotfiles/master/bootstrap.sh | bash
    ```
    What it does, in order:
+   - Checks git, your identity and SSH access to GitHub.
    - Installs Xcode Command Line Tools if missing (the script exits and asks you to re-run once the installer finishes).
-   - Installs Homebrew if missing, then `git` and `gh`.
-   - `gh auth login` in the browser if you are not logged in (the prompts come through `/dev/tty`, so the `curl | bash` form works). Answer **n** to "Authenticate Git with your GitHub credentials".
-   - Clones the repo with submodules to `~/dev/dotfiles`.
-   - Runs `preflight.sh` ([Existing machine](#existing-machine)): an Emacs you already have, a `~/.gitconfig` identity, an SSH key, a `~/.claude` setup are all detected and you choose what happens to each.
+   - Installs Homebrew if missing.
+   - Clones the repo over SSH with submodules to `~/dev/dotfiles`.
+   - Runs `preflight.sh` ([Existing machine](#existing-machine)): an Emacs you already have and a `~/.claude` setup are detected and you choose what happens to each; an existing `~/.gitconfig` is noted and left alone.
    - Runs `install.sh` (symlinks, archive of anything in the way, stale-link pruning).
-   - Prompts for git name and email, generates and registers the SSH key, writes `allowed_signers`. Last prompts; the rest runs unattended.
    - Runs `os/macos.sh`:
      - `brew bundle` against `os/Brewfile`: CLI tools, `emacs-plus@30` (native-comp), Ghostty, Claude Code, the Nerd Font;
      - copies `Emacs.app` to `/Applications` so Spotlight and the Dock can launch it;
      - starts the Emacs daemon via `brew services` (a launchd agent); both Emacs steps are skipped if preflight kept an Emacs you already had;
      - makes `/bin/zsh` the login shell if it is not;
-     - installs a LaunchAgent that remaps Caps Lock to Escape at every login (`hidutil`);
+     - installs a LaunchAgent that swaps Caps Lock and Left Ctrl at every login (`hidutil`);
      - applies a curated set of `defaults write` (fast key repeat, no press-and-hold accents, no smart quotes, Finder shows extensions and hidden files, Dock autohide);
      - adds `AddKeysToAgent` / `UseKeychain` to `~/.ssh/config`;
      - fixes the Homebrew completion-directory permissions that otherwise trigger `compinit` warnings.
-   - `mise install`. Git identity, SSH key generation and GitHub registration happened right after `install.sh`, same as Linux.
+   - `mise install`.
 
 3. Log out and back in (or reboot) so the keyboard remap, key repeat and login shell environment apply everywhere.
 
@@ -134,8 +128,7 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
 | `~/.bashrc`, `~/.bash_profile` | keep (suggested) / archive | bash still uses them |
 | `~/.emacs`, `~/.emacs.el`, `~/.emacs.d` | archive (suggested) / keep | Emacs prefers these and ignores `~/.config/emacs` while they exist; keep means the repo config does not load |
 | An Emacs already installed (macOS: `/Applications/Emacs.app`, `brew` formula or cask) | keep (suggested) / replace | keep skips `emacs-plus@30` and the `brew services` daemon; you run `emacs --daemon` your way. replace installs `emacs-plus@30` and prints the uninstall command for the old one; it never uninstalls for you |
-| `~/.gitconfig` with a name and email | adopt (suggested) / keep / new | git reads `~/.gitconfig` after `~/.config/git/config`, so everything in it overrides the repo. adopt copies the identity into `config.local` and archives the file; keep leaves it and its overrides; new archives it and lets bootstrap prompt |
-| SSH keys | report; generate (suggested) / skip when only non-ed25519 keys exist | an existing `~/.ssh/id_ed25519` is always reused. The report says whether `gh` is logged in, whether the key is on GitHub, whether `allowed_signers` is written |
+| `~/.gitconfig` | report only | git reads it after `~/.config/git/config`, so its identity, signing and helper settings override the repo defaults. Never touched |
 | `~/.claude/{CLAUDE.md,settings.json,statusline.sh,output-styles,skills}` that are not repo links | keep (suggested) / replace | keep makes `install.sh` skip the whole `claude` group (`DOTFILES_SKIP=claude` does the same by hand). If your `settings.json` has a `hooks` block it says so; the repo copy has none |
 | `~/.nvm`, `~/.pyenv`, `~/.rbenv`, `~/.asdf` | report only | mise covers them; remove when ready |
 
@@ -158,13 +151,7 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
 
 4. Open Emacs: `Meta+E` on KDE, Spotlight → "Emacs" on macOS, or `e file` in any terminal. The first launch installs the Emacs packages, including a `git clone` of `claude-code-ide.el` (one to two minutes, once). Native compilation runs in the background afterwards; ignore the `*Async-native-compile-log*` buffer.
 
-5. Test commit signing anywhere:
-   ```sh
-   git commit --allow-empty -m "test: signing"
-   git log --show-signature -1     # expect "Good signature"
-   ```
-
-6. Linux only, if bootstrap ran outside a Plasma session: run `~/dev/dotfiles/kde/apply.sh` now, then log out and in.
+5. Linux only, if bootstrap ran outside a Plasma session: run `~/dev/dotfiles/kde/apply.sh` now, then log out and in.
 
 ---
 
@@ -180,7 +167,7 @@ os/
   apt-packages.txt      flat apt list
   Brewfile              formulae, taps, casks
   macos/defaults.sh     curated `defaults write`
-  macos/capslock.plist  LaunchAgent: Caps Lock -> Escape
+  macos/capslock.plist  LaunchAgent: Caps Lock <-> Left Ctrl
 emacs/
   early-init.el         GC and frame settings applied before the GUI exists
   init.el               the whole Emacs config, one file
@@ -193,7 +180,7 @@ zsh/
   plugins/              fzf-tab, zsh-autosuggestions, zsh-syntax-highlighting (submodules)
 ghostty/config          shared terminal config
 config/
-  git/config            git defaults; includes config.local for identity
+  git/config            git defaults; includes config.local for machine-specific overrides
   git/ignore            global gitignore
   mise/config.toml      global toolchain
 kde/
@@ -230,11 +217,11 @@ Files that must not be symlinks (Plasma rewrites its rc files atomically, launch
 
 ## How the pieces fit
 
-**Editor everywhere.** `EDITOR` and `VISUAL` are `emacsclient -t` in shells (a terminal frame inside your current terminal, fast, closes with `C-x #` or `:q`), and `emacsclient -c` for GUI sessions (KDE via `kde/env.sh`; macOS apps inherit from launchd). `ALTERNATE_EDITOR` is the empty string, which tells emacsclient to start the daemon if it is not running. Git commit messages, `crontab -e`, `gh pr create` all open in Emacs.
+**Editor everywhere.** `EDITOR` and `VISUAL` are `emacsclient -t` in shells (a terminal frame inside your current terminal, fast, closes with `C-x #` or `:q`), and `emacsclient -c` for GUI sessions (KDE via `kde/env.sh`; macOS apps inherit from launchd). `ALTERNATE_EDITOR` is the empty string, which tells emacsclient to start the daemon if it is not running. Git commit messages and `crontab -e` open in Emacs.
 
 **One PATH story.** `~/.local/bin` first, then mise shims, then the system. Shells get it from `.zshenv`/`.zprofile`. GUI apps get it from the Plasma session env on Linux and from `exec-path-from-shell` on macOS. Emacs additionally prepends both directories to `exec-path` itself, so eglot finds `basedpyright` and `typescript-language-server` even when the daemon was started by systemd or launchd with a minimal environment.
 
-**Keyboard.** Caps Lock is Escape on both OSes (KDE `kxkbrc`, macOS `hidutil`). Key repeat is fast on both. `Meta+E` (KDE) opens an Emacs frame, `Meta+Return` a terminal, `Meta+D` KRunner. On macOS, Option is Meta in Emacs and Ghostty; Command stays Command.
+**Keyboard.** Caps Lock and Left Ctrl are swapped on both OSes (KDE `kxkbrc`, macOS `hidutil`); Escape in evil is `C-[`. Key repeat is fast on both. `Meta+E` (KDE) opens an Emacs frame, `Meta+Return` a terminal, `Meta+D` KRunner. On macOS, Option is Meta in Emacs and Ghostty; Command stays Command.
 
 **Package managers own upgrades.** apt and Homebrew install Emacs, Ghostty, Claude Code, mise, CLI tools. mise installs language toolchains, LSP servers and formatters. Emacs `package.el` installs Emacs packages (`package-vc` for the one that is not on an archive). Nothing is curl-piped except Homebrew's installer on macOS.
 
@@ -357,9 +344,18 @@ Linux gets Ghostty from the `mkasberg/ghostty-ubuntu` release builds, which publ
 
 `config/git/config` sets: delta as pager with line numbers, `zdiff3` conflict style, histogram diff, `rerere`, autostash on rebase, prune on fetch, `push.autoSetupRemote`, branch list sorted by recent commit, verbose commit messages, `main` as the default branch, and a handful of aliases (`st`, `cm`, `co`, `br`, `last`, `unstage`, `hist`).
 
-Commits and tags are signed with your SSH key. `gpg.format = ssh`, `allowedSignersFile` points at `~/.config/git/allowed_signers`, which bootstrap writes from your email and public key. GitHub shows "Verified" because bootstrap registered the same key as a signing key.
+Identity, credential helpers and signing are not set here; git reads `~/.gitconfig` after this file, so whatever the machine already has wins. `~/.config/git/config.local` is included last and never committed, for overrides you want beside the repo config instead. To sign commits with your SSH key from there:
 
-Identity lives in `~/.config/git/config.local` (created by `install.sh`, filled by bootstrap, never committed). Put machine-specific credential helpers or overrides there too.
+```ini
+[user]
+	signingkey = ~/.ssh/id_ed25519.pub
+[commit]
+	gpgsign = true
+[gpg]
+	format = ssh
+```
+
+Register the same public key on GitHub as a signing key for "Verified" badges.
 
 `core.editor` is not set; git follows `VISUAL`/`EDITOR`, so it opens a terminal frame in shells and a GUI frame from GUI apps.
 
@@ -381,7 +377,7 @@ mise upgrade                 # bump everything
 
 `kde/apply.sh` writes only the keys this repo owns, via `kwriteconfig6`, and leaves the rest of Plasma's config alone:
 
-- `kxkbrc`: `caps:swapescape`;
+- `kxkbrc`: `caps:swapctrl`;
 - `kcminputrc`: repeat delay 250 ms, rate 40/s;
 - `kdeglobals`: fixed-width font CommitMono Nerd Font 11;
 - `kglobalshortcutsrc`: `Meta+E` Emacs frame, `Meta+Return` terminal, `Meta+D` KRunner, `Meta+Shift+Q` close window, `Meta+H/J/K/L` focus window left/down/up/right.
@@ -399,7 +395,7 @@ Plasma 6 removed the "Custom Shortcuts" module; launching a command from a short
 - **Homebrew** lives in `/opt/homebrew` (Apple Silicon) or `/usr/local` (Intel); `.zprofile` detects which. `HOMEBREW_NO_ANALYTICS=1` is set globally.
 - **Emacs** is `emacs-plus@30` with native compilation (the formula's default). `Emacs.app` is copied to `/Applications` because Spotlight does not index symlinks into the Homebrew cellar. The daemon is a `brew services` launchd agent running `emacs --fg-daemon`.
 - **Modifiers in Emacs**: left Option is Meta, right Option is left alone for special characters, Command is Super. Command shortcuts you expect from macOS (`⌘C`, `⌘V`, `⌘Z`) are not bound; use evil.
-- **Caps Lock → Escape** uses `hidutil` in a LaunchAgent (`com.dotfiles.capslock`), re-applied at each login because the mapping does not persist across reboots.
+- **Caps Lock ↔ Left Ctrl** uses `hidutil` in a LaunchAgent (`com.dotfiles.capslock`), re-applied at each login because the mapping does not persist across reboots.
 - **`defaults`** applied by `os/macos/defaults.sh`; edit the list before running if you disagree with any. Dock and Finder restart automatically; keyboard settings apply after logout.
 - **SSH** uses the Keychain for the key passphrase (`UseKeychain yes`).
 - **No tiling manager** is installed. Sequoia's built-in tiling (`Fn+Control+arrows`) covers halves; add AeroSpace or Rectangle to the Brewfile if you want more.
@@ -432,7 +428,7 @@ Outside Emacs, `claude` in Ghostty is the same thing without the ediff loop; `gl
 
 ### The rest of `settings.json`
 
-- **Sandbox**: on, with network egress limited to GitHub, npm and PyPI; the private SSH key is hidden; the `gh` token is masked and injected only for GitHub hosts. Bubblewrap (Linux) or Seatbelt (macOS) provides the isolation.
+- **Sandbox**: on, with network egress limited to GitHub, npm and PyPI; the private SSH key is hidden. Bubblewrap (Linux) or Seatbelt (macOS) provides the isolation.
 - **Plugins**: `typescript-lsp`, `pyright-lsp`, `remember`, `caveman`. Install them once with the `jq | xargs` one-liner in [After bootstrap](#after-bootstrap). `caveman` comes from a third-party marketplace (`JuliusBrussee/caveman`); drop both entries if you do not want it.
 - **Statusline**: `claude/statusline.sh` shows exceptions only: model, `project:branch`, effort when it is not `high`, context usage with a hand-off warning at 25 %, and the 5h/7d rate-limit windows once they pass 50 %. One `jq` call, plus `git` for the branch.
 - **Not managed**: `~/.claude/hooks` and `settings.local.json` are yours; `install.sh` never touches them, and preflight offers to keep an existing `~/.claude` whole.
@@ -472,12 +468,12 @@ Locally: `~/dev/dotfiles/install.sh check` after anything that might have replac
 
 ## Forking
 
-1. Fork on GitHub, then in `bootstrap.sh` change `REPO_URL`, or run it with `DOTFILES_REPO=https://github.com/you/dotfiles`.
+1. Fork on GitHub, then in `bootstrap.sh` change `REPO_URL`, or run it with `DOTFILES_REPO=git@github.com:you/dotfiles`.
 2. Edit `os/apt-packages.txt` and `os/Brewfile` to taste.
 3. Adjust `kde/apply.sh` and `os/macos/defaults.sh`; both are lists of individual settings, remove lines you do not want.
 4. `claude/settings.json`: change or drop `model` (it names a specific tier), the plugins (`caveman` and its `extraKnownMarketplaces` entry point at a third-party GitHub repo), the allowed network domains, and `Read(~/**)` if you want Claude confined to your working directories.
-5. `claude/skills/flow` assumes a ticket tracker reachable over MCP and `gh`; `/investigate` works without either. Delete what you do not use.
-6. Nothing else references a person: git identity is prompted or adopted from your `~/.gitconfig`, SSH keys are generated, the `hostname` names the GitHub key.
+5. `claude/skills/flow` assumes a ticket tracker reachable over MCP; `/investigate` works without it. Delete what you do not use.
+6. Nothing else references a person: git identity and SSH keys are whatever the machine already has; bootstrap only checks they exist.
 
 ---
 

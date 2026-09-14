@@ -81,9 +81,3 @@ if [ -f "$MANIFEST" ]; then
 fi
 mkdir -p "$(dirname "$MANIFEST")"
 printf '%s\n' "${LINKS[@]#*:}" > "$MANIFEST"
-
-LOCAL="$HOME/.config/git/config.local"
-if [ ! -f "$LOCAL" ]; then
-  printf '[user]\n\tname = \n\temail = \n\tsigningkey = ~/.ssh/id_ed25519.pub\n' > "$LOCAL"
-  echo "created    $LOCAL  <- fill in name/email"
-fi

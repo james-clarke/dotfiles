@@ -45,27 +45,9 @@
 
 [commit]
 	verbose = true
-	gpgsign = true
-
-[tag]
-	gpgsign = true
-
-[gpg]
-	format = ssh
-
-[gpg "ssh"]
-	allowedSignersFile = ~/.config/git/allowed_signers
 
 [rebase]
 	autostash = true
-
-[credential "https://github.com"]
-	helper =
-	helper = !gh auth git-credential
-
-[credential "https://gist.github.com"]
-	helper =
-	helper = !gh auth git-credential
 
 [include]
 	path = config.local

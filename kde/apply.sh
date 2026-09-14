@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# Declarative KDE settings via kwriteconfig6. Idempotent. Plasma rewrites rc
-# files atomically, so symlinking them fails; set only the keys we own.
 set -euo pipefail
 
 set_key() { # FILE GROUP[/SUBGROUP...] KEY VALUE
@@ -11,7 +9,7 @@ set_key() { # FILE GROUP[/SUBGROUP...] KEY VALUE
 }
 
 # keyboard
-set_key kxkbrc Layout Options caps:swapescape
+set_key kxkbrc Layout Options caps:swapctrl
 set_key kxkbrc Layout ResetOldOptions true
 set_key kcminputrc Keyboard RepeatDelay 250
 set_key kcminputrc Keyboard RepeatRate 40

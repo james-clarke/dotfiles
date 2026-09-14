@@ -13,12 +13,6 @@
       "Bash(git worktree list*)",
       "Bash(git stash list*)",
       "Bash(git blame *)",
-      "Bash(gh api -X GET *)",
-      "Bash(gh api --method GET *)",
-      "Bash(gh pr *)",
-      "Bash(gh issue *)",
-      "Bash(gh run *)",
-      "Bash(gh search *)",
       "Read(~/**)",
       "Read(//tmp/**)",
       "WebFetch(domain:github.com)",
@@ -94,15 +88,6 @@
         {
           "path": "~/.ssh/id_ed25519",
           "mode": "deny"
-        },
-        {
-          "path": "~/.config/gh/hosts.yml",
-          "mode": "mask",
-          "extract": "oauth_token:\\s*(\\S+)",
-          "injectHosts": [
-            "api.github.com",
-            "github.com"
-          ]
         }
       ]
     }

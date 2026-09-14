@@ -34,7 +34,7 @@ Plugin injects rules at SessionStart; level pinned `lite` via `CAVEMAN_DEFAULT_M
 
 ## Tooling Efficiency — Hard Rules
 
-- Parse `gh`/JSON with `gh --jq`/`--template` or pipe to `jq` — never to `python3 -c` parsers.
+- Parse JSON with `jq` — never with `python3 -c` parsers.
 - One broad-but-safe permission pattern over many one-off exact allows.
 
 ## Context Hygiene — Hard Rules

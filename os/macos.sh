@@ -22,7 +22,7 @@ else
   brew services list | grep -qE '^emacs-plus@30\s+started' || brew services start d12frosted/emacs-plus/emacs-plus@30
 fi
 
-step "keyboard: caps lock -> escape"
+step "keyboard: swap caps lock and left ctrl"
 LA="$HOME/Library/LaunchAgents/com.dotfiles.capslock.plist"
 mkdir -p "$(dirname "$LA")"
 cp "$REPO/os/macos/capslock.plist" "$LA"

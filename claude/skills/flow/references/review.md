@@ -2,7 +2,7 @@
 
 > Context brief already built by the router.
 
-Two modes, flagged in the brief. Both end with draft comments in the user's voice. The user posts everything themselves — never post via `gh`, never transition a ticket without their OK.
+Two modes, flagged in the brief. Both end with draft comments in the user's voice. The user posts everything themselves — never post comments yourself, never transition a ticket without their OK.
 
 ## Mode A — fresh review
 

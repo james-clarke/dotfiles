@@ -1,7 +1,6 @@
 tap "d12frosted/emacs-plus"
 
 brew "git"
-brew "gh"
 brew "git-delta"
 brew "jq"
 brew "fzf"
