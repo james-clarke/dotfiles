@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 # Symlink repo files into place. `install.sh check` verifies every link.
+# DOTFILES_SKIP="claude zsh" leaves those groups alone; preflight.sh answers set it for claude.
 set -euo pipefail
 
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles"
+ARCHIVE="$STATE/archive/$(date +%Y%m%d-%H%M%S)"
+SKIP=${DOTFILES_SKIP:-}
+[ "$(sed -n 's|^claude/config=||p' "$STATE/preflight" 2>/dev/null | tail -1)" = keep ] && SKIP="$SKIP claude"
 case ${1:-install} in
   install) MODE="link" ;;
   check)   MODE="check" ;;
@@ -20,6 +25,7 @@ LINKS=(
   "config/mise/config.toml:$HOME/.config/mise/config.toml"
   "emacs/early-init.el:$HOME/.config/emacs/early-init.el"
   "emacs/init.el:$HOME/.config/emacs/init.el"
+  "emacs/templates:$HOME/.config/emacs/templates"
   "ghostty/config:$HOME/.config/ghostty/config"
   "zsh:$HOME/.config/zsh"
   "zsh/home.zshenv:$HOME/.zshenv"
@@ -31,14 +37,22 @@ case $(uname -s) in
   ) ;;
 esac
 
+skipped() {
+  local g=${1%%/*}
+  [ "$g" = config ] && { g=${1#config/}; g=${g%%/*}; }
+  case " $SKIP " in *" $g "*) return 0 ;; esac
+  return 1
+}
+
 link() {
-  local src=$1 dst=$2
+  local src=$1 dst=$2 rel=${2#"$HOME"/}
   mkdir -p "$(dirname "$dst")"
   if [ -L "$dst" ]; then
     rm "$dst"
   elif [ -e "$dst" ]; then
-    mv "$dst" "$dst.bak.$(date +%s)"
-    echo "backed up  $dst"
+    mkdir -p "$ARCHIVE/$(dirname "$rel")"
+    mv "$dst" "$ARCHIVE/$rel"
+    echo "archived   $dst -> $ARCHIVE/$rel"
   fi
   ln -s "$src" "$dst"
   echo "linked     $dst"
@@ -53,11 +67,12 @@ check() {
 rc=0
 for pair in "${LINKS[@]}"; do
   src="$REPO/${pair%%:*}" dst="${pair#*:}"
+  skipped "${pair%%:*}" && { echo "skipped    $dst"; continue; }
   "$MODE" "$src" "$dst"
 done
 [ "$MODE" = check ] && exit "$rc"
 
-MANIFEST="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/links"
+MANIFEST="$STATE/links"
 if [ -f "$MANIFEST" ]; then
   while read -r old; do
     case " ${LINKS[*]#*:} " in *" $old "*) continue ;; esac

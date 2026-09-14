@@ -27,17 +27,22 @@ esac
 
 step "gh auth"
 if ! gh auth status >/dev/null 2>&1; then
-  [ -t 0 ] || { echo "not logged in. Run: gh auth login -h github.com -p https -w -s admin:public_key  (answer n to git auth)"; exit 1; }
-  gh auth login -h github.com -p https -w -s admin:public_key
+  { : </dev/tty; } 2>/dev/null || { echo "not logged in and no terminal. Run: gh auth login -h github.com -p https -w -s admin:public_key  (answer n to git auth)"; exit 1; }
+  gh auth login -h github.com -p https -w -s admin:public_key </dev/tty
 fi
 
 step "clone"
 if [ -f "$DEST/install.sh" ]; then
+  git -C "$DEST" pull -q --ff-only
   git -C "$DEST" submodule update --init -q
 else
   mkdir -p "$(dirname "$DEST")"
   git -c credential.helper='!gh auth git-credential' clone -q --recurse-submodules "$REPO_URL" "$DEST"
 fi
+
+step "preflight (existing files and tools)"
+"$DEST/preflight.sh"
+decided() { sed -n "s|^$1=||p" "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/preflight" 2>/dev/null | tail -1; }
 
 step "symlinks"
 "$DEST/install.sh"
@@ -52,12 +57,18 @@ if [ -z "$(git config -f "$LOCAL" user.email || true)" ]; then
 fi
 email=$(git config -f "$LOCAL" user.email)
 KEY="$HOME/.ssh/id_ed25519"
-[ -f "$KEY" ] || ssh-keygen -t ed25519 -C "$email" -f "$KEY"
-printf '%s %s\n' "$email" "$(cut -d' ' -f1,2 "$KEY.pub")" > "$HOME/.config/git/allowed_signers"
-gh ssh-key list >/dev/null 2>&1 || gh auth refresh -h github.com -s admin:public_key
-if ! gh ssh-key list | grep -qF "$(cut -d' ' -f2 "$KEY.pub")"; then
-  gh ssh-key add "$KEY.pub" --type authentication --title "$(hostname)"
-  gh ssh-key add "$KEY.pub" --type signing --title "$(hostname) signing"
+if [ "$(decided ssh/key)" = skip ]; then
+  echo "ssh key skipped per preflight; signing stays off"
+else
+  [ -f "$KEY" ] || ssh-keygen -t ed25519 -C "$email" -f "$KEY"
+  SIGNERS="$HOME/.config/git/allowed_signers"
+  line="$email $(cut -d' ' -f1,2 "$KEY.pub")"
+  grep -qxF "$line" "$SIGNERS" 2>/dev/null || printf '%s\n' "$line" >> "$SIGNERS"
+  gh ssh-key list >/dev/null 2>&1 || gh auth refresh -h github.com -s admin:public_key
+  if ! gh ssh-key list | grep -qF "$(cut -d' ' -f2 "$KEY.pub")"; then
+    gh ssh-key add "$KEY.pub" --type authentication --title "$(hostname)"
+    gh ssh-key add "$KEY.pub" --type signing --title "$(hostname) signing"
+  fi
 fi
 
 case $OS in
