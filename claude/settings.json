@@ -28,7 +28,7 @@
     "deny": [
       "Bash(git push*)"
     ],
-    "defaultMode": "auto",
+    "defaultMode": "default",
     "additionalDirectories": [
       "/tmp"
     ]
@@ -52,15 +52,15 @@
       }
     }
   },
-  "outputStyle": "minimal",
+  "outputStyle": "Learning",
   "language": "English",
+  "includeCoAuthoredBy": false,
   "spinnerTipsEnabled": false,
   "effortLevel": "high",
   "promptSuggestionEnabled": false,
   "awaySummaryEnabled": false,
   "tui": "fullscreen",
   "prefersReducedMotion": true,
-  "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "theme": "dark",
   "verbose": false,

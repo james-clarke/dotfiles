@@ -1,11 +1,12 @@
 ---
 name: flow
 description: >-
-  Single entry point for all workflows. Kinds = dev (ticket development),
-  pr (code review), repr (re-review changes), inv (investigate).
-  Runs a shared orient stage that gathers ticket, PR, comment, and any other
-  relevant context into one brief, then dispatches to the matching pipeline
-  in references/. Use as /flow [kind] [target].
+  Agentic entry point for build and review work. Kinds = dev (ticket
+  development), pr (code review), repr (re-review changes). Runs a shared
+  orient stage that gathers ticket, PR, comment, and any other relevant
+  context into one brief, then dispatches to the matching pipeline in
+  references/. Read-only exploration lives in /investigate. Use as
+  /flow [kind] [target].
 disable-model-invocation: true
 ---
 
@@ -26,7 +27,8 @@ Arguments = whatever follows `/flow` (`$ARGUMENTS`).
 | `/flow dev [KEY]` | ticket dev pipeline |
 | `/flow pr <PR#\|branch>` | review pipeline, fresh |
 | `/flow repr <PR#>` | review pipeline, re-review mode |
-| `/flow inv <KEY\|PR#>` | investigate pipeline — explicit only, never inferred |
+
+Read-only exploration is `/investigate`, not a kind here; it hands off to `/flow dev` when the user says build.
 
 Inference signals, gathered in parallel and cheap:
 
@@ -56,10 +58,9 @@ Read exactly one file and follow it, with the brief prepended:
 |---|---|
 | ticket dev, incl. corrections mode | `references/ticket.md` |
 | review / re-review | `references/review.md` |
-| investigate | `references/investigate.md` |
 
 ## 4. State
 
 `~/.claude/flow-state/<key>.json` — kind, stage, chunk, last-seen PR comment id, timestamp.
 
-Write at each stage boundary. Invoked with existing state for the target = offer resume at the recorded stage vs restart. Delete state on ship or verdict. Investigate writes no state.
+Write at each stage boundary. Invoked with existing state for the target = offer resume at the recorded stage vs restart. Delete state on ship or verdict.

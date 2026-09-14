@@ -19,9 +19,12 @@ Plugin injects rules at SessionStart; level pinned `lite` via `CAVEMAN_DEFAULT_M
 - Confirm before destructive / shared-state ops (push, PR create, branch delete, DB drop, sending messages).
 - Dedicated tools (Read/Edit/Write/Grep) over Bash equivalents. Parallel tool calls when independent.
 
-## Output Shape
+## Posture
 
-Enforced by `outputStyle: "minimal"` (`~/.claude/output-styles/minimal.md`). Risky / multi-step / destructive: drop caveman, state result + verification.
+- **Default = learn.** `outputStyle` Learning, `defaultMode` default. A question or an ambiguous ask gets the approach, the tradeoffs and the `file:line` involved, then stops. No edits until told to build ("build", "do it", "go"). `/investigate` for a read-only deep dive.
+- **Building.** Small edits, one at a time. The permission prompt is the review (ediff inside Emacs when started from `SPC a c`), so no narration around it. Leave `TODO(human)` stubs for the parts worth doing by hand.
+- **Opt-in = agentic.** `claude-build` (shell) or `SPC a A` (Emacs) start with `acceptEdits`; Shift+Tab cycles modes mid-session; `/config` → Minimal switches to answer-only output. Same rules, fewer stops. `/flow` pipelines assume this posture.
+- Risky / multi-step / destructive: drop caveman, state result + verification.
 
 ## Model Tiering — Hard Rules
 

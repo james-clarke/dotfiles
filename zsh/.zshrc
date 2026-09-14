@@ -83,6 +83,7 @@ alias ls='eza --group-directories-first --icons=auto'
 alias la='eza -a --icons=auto'
 alias cp='cp -iv' rm='rm -iv' mkdir='mkdir -pv' df='df -h'
 alias e='emacsclient -t' eg='emacsclient -c -n'
+alias claude-build='claude --permission-mode acceptEdits'
 export MANPAGER="sh -c 'col -bx | bat -l man -p'" MANROFFOPT='-c'
 
 # --- widgets ---

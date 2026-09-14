@@ -1,6 +1,7 @@
 ---
 name: Minimal
-description: Answer-first output — no preamble, no recap, no unsolicited tips
+description: Answer-first output — no preamble, no recap, no unsolicited tips. Opt-in for agentic runs.
+keep-coding-instructions: true
 ---
 
 # Output Shape — Minimal
