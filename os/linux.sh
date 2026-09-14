@@ -20,8 +20,13 @@ mkdir -p "$BIN"
 ln -sfn /usr/bin/batcat "$BIN/bat"
 ln -sfn /usr/bin/fdfind "$BIN/fd"
 
-step "mise"
-command -v mise >/dev/null || [ -x "$BIN/mise" ] || curl -fsSL https://mise.run | sh
+step "mise (apt via extrepo; updates ride apt upgrade)"
+if ! command -v mise >/dev/null; then
+  sudo apt-get install -y -q extrepo
+  sudo extrepo enable mise
+  sudo apt-get update -q
+  sudo apt-get install -y -q mise
+fi
 
 step "font"
 FONTS="$HOME/.local/share/fonts/CommitMonoNerdFont"
@@ -50,7 +55,8 @@ if ! command -v ghostty >/dev/null; then
 fi
 
 step "emacs daemon"
-systemctl --user enable --now emacs.service
+systemctl --user enable --now emacs.service \
+  || echo "no user session (ssh / before first login); after login run: systemctl --user enable --now emacs.service"
 
 step "claude code (apt; updates ride apt upgrade)"
 if ! command -v claude >/dev/null; then
