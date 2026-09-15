@@ -107,6 +107,7 @@
         evil-search-module 'evil-search
         evil-ex-search-vim-style-regexp t)
   :config
+  (defvar evil-mode-buffers nil)
   (evil-mode 1)
   (evil-set-leader '(normal visual) (kbd "SPC"))
   (evil-define-key 'normal 'global (kbd "gcc") #'comment-line (kbd "K") #'eldoc)
@@ -114,7 +115,9 @@
 
 (use-package evil-collection
   :after evil
-  :custom (evil-collection-want-unimpaired-p nil)
+  :custom
+  (evil-collection-want-unimpaired-p nil)
+  (evil-collection-key-blacklist '("SPC"))
   :config (evil-collection-init))
 
 (use-package evil-surround
@@ -248,7 +251,7 @@
   :init (global-corfu-mode)
   :config (corfu-popupinfo-mode))
 
-(use-package corfu-terminal :after corfu :config (corfu-terminal-mode))
+(use-package corfu-terminal :if (< emacs-major-version 31) :after corfu :config (corfu-terminal-mode))
 
 (use-package cape
   :init
@@ -279,7 +282,7 @@
 (use-package eglot
   :ensure nil
   :hook ((python-base-mode js-base-mode typescript-ts-base-mode rust-ts-mode go-ts-mode
-          c-ts-base-mode bash-ts-mode ruby-ts-mode) . eglot-ensure)
+                           c-ts-base-mode bash-ts-mode ruby-ts-mode) . eglot-ensure)
   :custom
   (eglot-autoshutdown t)
   (eglot-events-buffer-config '(:size 0))
@@ -332,12 +335,12 @@
 (use-package minuet
   :hook (prog-mode . dot/minuet-on)
   :bind (:map evil-insert-state-map ("M-i" . minuet-show-suggestion)
-         :map minuet-active-mode-map
-         ("M-a" . minuet-accept-suggestion-line)
-         ("M-y" . minuet-accept-suggestion)
-         ("M-e" . minuet-dismiss-suggestion)
-         ("M-n" . minuet-next-suggestion)
-         ("M-p" . minuet-previous-suggestion))
+              :map minuet-active-mode-map
+              ("M-a" . minuet-accept-suggestion-line)
+              ("M-y" . minuet-accept-suggestion)
+              ("M-e" . minuet-dismiss-suggestion)
+              ("M-n" . minuet-next-suggestion)
+              ("M-p" . minuet-previous-suggestion))
   :custom
   (minuet-provider 'openai-compatible)
   (minuet-n-completions 1)

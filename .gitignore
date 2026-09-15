@@ -3,3 +3,4 @@
 .cc-writes/
 .mcp.json
 *.elc
+.zsh_sessions
