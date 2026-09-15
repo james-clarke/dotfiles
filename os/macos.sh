@@ -20,7 +20,7 @@ if [ "$KEEP_EMACS" = keep ]; then
 else
   APP="$(brew --prefix)/opt/emacs-plus@30/Emacs.app"
   if [ "$KEEP_EMACS" = replace ]; then
-    brew list --formula 2>/dev/null | grep -qx emacs && brew uninstall emacs
+    for f in $(brew list --formula 2>/dev/null | grep -i '^emacs' | grep -vx 'emacs-plus@30'); do brew uninstall "$f"; done
     if [ -e /Applications/Emacs.app ] && ! diff -q "$APP/Contents/Info.plist" /Applications/Emacs.app/Contents/Info.plist >/dev/null 2>&1; then
       OLD="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/archive/$(date +%Y%m%d-%H%M%S)/Applications"
       mkdir -p "$OLD" && mv /Applications/Emacs.app "$OLD/" && echo "archived   /Applications/Emacs.app -> $OLD/"

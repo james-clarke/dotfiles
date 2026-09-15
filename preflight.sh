@@ -71,8 +71,8 @@ done
 if [ "$(uname -s)" = Darwin ] && command -v brew >/dev/null && ! brew list --formula 2>/dev/null | grep -qx 'emacs-plus@30'; then
   have=""
   [ -d /Applications/Emacs.app ] && have="/Applications/Emacs.app"
-  brew list --formula 2>/dev/null | grep -qx emacs && have="$have brew:emacs"
-  brew list --cask 2>/dev/null | grep -qx emacs && have="$have cask:emacs"
+  for f in $(brew list --formula 2>/dev/null | grep -i '^emacs'); do have="$have brew:$f"; done
+  for c in $(brew list --cask 2>/dev/null | grep -i '^emacs'); do have="$have cask:$c"; done
   if [ -n "$have" ]; then
     case $(ask emacs/install "Emacs is already installed ($have); the repo installs emacs-plus@30 and runs it as a daemon" keep "keep replace") in
       keep)    echo "kept       $have  (emacs-plus@30 skipped; run your own daemon: emacs --daemon)"
