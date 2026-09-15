@@ -1,0 +1,11 @@
+[tools]
+jq = "latest"
+fzf = "latest"
+eza = "latest"
+zoxide = "latest"
+ripgrep = "latest"
+fd = "latest"
+bat = "latest"
+delta = "latest"
+direnv = "latest"
+shellcheck = "latest"

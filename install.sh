@@ -34,6 +34,7 @@ case $(uname -s) in
     "kde/env.sh:$HOME/.config/plasma-workspace/env/dotfiles.sh"
     "kde/dotfiles-emacs.desktop:$HOME/.local/share/applications/dotfiles-emacs.desktop"
   ) ;;
+  Darwin) LINKS+=("config/mise/conf.d/macos.toml:$HOME/.config/mise/conf.d/macos.toml") ;;
 esac
 
 skipped() {

@@ -12,7 +12,10 @@ eval "$("$BREW" shellenv)"
 export HOMEBREW_NO_ANALYTICS=1
 KEEP_EMACS=$(sed -n 's|^emacs/install=||p' "${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/preflight" 2>/dev/null | tail -1)
 [ "$KEEP_EMACS" = keep ] && export HOMEBREW_BUNDLE_BREW_SKIP="emacs-plus@30"
-brew bundle --file "$REPO/os/Brewfile"
+brew bundle --file="$REPO/os/Brewfile"
+
+step "mise (prebuilt binary; the Homebrew formula compiles Rust on any macOS without bottles)"
+[ -x "$HOME/.local/bin/mise" ] || curl -fsSL https://mise.run | MISE_INSTALL_PATH="$HOME/.local/bin/mise" sh
 
 step "emacs daemon"
 if [ "$KEEP_EMACS" = keep ]; then

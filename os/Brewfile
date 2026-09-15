@@ -1,17 +1,5 @@
 tap "d12frosted/emacs-plus"
 
-brew "git"
-brew "git-delta"
-brew "jq"
-brew "fzf"
-brew "eza"
-brew "zoxide"
-brew "ripgrep"
-brew "fd"
-brew "bat"
-brew "direnv"
-brew "mise"
-brew "shellcheck"
 brew "emacs-plus@30"
 
 cask "ghostty"

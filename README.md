@@ -102,7 +102,8 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
    - Runs `preflight.sh` ([Existing machine](#existing-machine)): an Emacs you already have and a `~/.claude` setup are detected and you choose what happens to each; an existing `~/.gitconfig` is noted and left alone.
    - Runs `install.sh` (symlinks, archive of anything in the way, stale-link pruning).
    - Runs `os/macos.sh`:
-     - `brew bundle` against `os/Brewfile`: CLI tools, `emacs-plus@30` (native-comp), Ghostty, Claude Code, the Nerd Font;
+     - `brew bundle` against `os/Brewfile`: `emacs-plus@30` (native-comp, a source build), Ghostty, Claude Code, the Nerd Font;
+     - installs `mise` as a prebuilt binary into `~/.local/bin` (its Homebrew formula compiles Rust on any macOS without bottles); the CLI tools (`jq`, `fzf`, `eza`, `zoxide`, `ripgrep`, `fd`, `bat`, `delta`, `direnv`, `shellcheck`) come through mise from `config/mise/conf.d/macos.toml`, so a macOS release Homebrew no longer bottles for still installs in a minute;
      - copies `Emacs.app` to `/Applications` so Spotlight and the Dock can launch it;
      - starts the Emacs daemon via `brew services` (a launchd agent); both Emacs steps are skipped if preflight kept an Emacs you already had;
      - makes `/bin/zsh` the login shell if it is not;
@@ -189,6 +190,7 @@ config/
   git/config            git defaults; includes config.local for machine-specific overrides
   git/ignore            global gitignore
   mise/config.toml      global toolchain
+  mise/conf.d/macos.toml CLI tools on macOS (apt provides them on Linux)
 kde/
   apply.sh              Plasma settings via kwriteconfig6 (keyboard, fonts, shortcuts)
   env.sh                Plasma session env (PATH, EDITOR) for GUI apps
@@ -212,6 +214,7 @@ claude/
 | `ghostty/config` | `~/.config/ghostty/config` |
 | `config/git/*` | `~/.config/git/` |
 | `config/mise/config.toml` | `~/.config/mise/config.toml` |
+| `config/mise/conf.d/macos.toml` | `~/.config/mise/conf.d/macos.toml` (macOS only) |
 | `claude/*` | `~/.claude/` |
 | `kde/env.sh` (Linux) | `~/.config/plasma-workspace/env/dotfiles.sh` |
 | `kde/dotfiles-emacs.desktop` (Linux) | `~/.local/share/applications/` |
@@ -228,7 +231,7 @@ Files that must not be symlinks (Plasma rewrites its rc files atomically, launch
 
 **Keyboard.** Caps Lock and Left Ctrl are swapped on both OSes (KDE `kxkbrc`, macOS `hidutil`); Escape in evil is `C-[`. Key repeat is fast on both. `Meta+E` (KDE) opens an Emacs frame, `Meta+Return` a terminal, `Meta+D` KRunner. On macOS, Option is Meta in Emacs and Ghostty; Command stays Command.
 
-**Package managers own upgrades.** apt and Homebrew install Emacs, Ghostty, Claude Code, mise, CLI tools. mise installs language toolchains, LSP servers and formatters. Emacs `package.el` installs Emacs packages (`package-vc` for the one that is not on an archive). Nothing is curl-piped except Homebrew's installer on macOS.
+**Package managers own upgrades.** apt installs Emacs, Ghostty, Claude Code, mise and the CLI tools on Linux. Homebrew installs Emacs, Ghostty, Claude Code and the font on macOS; the CLI tools there come from mise as prebuilt binaries, because Homebrew stops bottling formulae for a macOS release after about three years and everything would compile from source. mise installs language toolchains, LSP servers and formatters on both. Emacs `package.el` installs Emacs packages (`package-vc` for the one that is not on an archive). Nothing is curl-piped except Homebrew's and mise's installers on macOS.
 
 ---
 
@@ -368,7 +371,7 @@ Register the same public key on GitHub as a signing key for "Verified" badges.
 
 ## Toolchains: mise
 
-`config/mise/config.toml` is the global toolchain: `node` (LTS), `uv`, `basedpyright`, `typescript-language-server`, `typescript`. Projects override with their own `.mise.toml` or `.python-version`. `mise activate zsh` runs in interactive shells; GUI apps and the Emacs daemon use the shims directory instead, which is on PATH everywhere.
+`config/mise/config.toml` is the global toolchain: `node` (LTS), `uv`, `basedpyright`, `typescript-language-server`, `typescript`. On macOS `conf.d/macos.toml` adds the CLI tools (`jq`, `fzf`, `eza`, `zoxide`, `ripgrep`, `fd`, `bat`, `delta`, `direnv`, `shellcheck`) as prebuilt binaries; on Linux apt provides the same tools and that file is not linked. Projects override with their own `.mise.toml` or `.python-version`. `mise activate zsh` runs in interactive shells; GUI apps and the Emacs daemon use the shims directory instead, which is on PATH everywhere.
 
 ```sh
 mise use -g go@latest        # add a global tool
@@ -450,7 +453,7 @@ The API key comes from `auth-source`: the first `M-i` asks for it and offers to 
 | What | Command |
 |---|---|
 | Everything system-level, Linux | `sudo apt update && sudo apt upgrade` (Emacs, Ghostty stays pinned, Claude Code, CLI tools) |
-| Everything system-level, macOS | `brew update && brew upgrade && brew bundle --file ~/dev/dotfiles/os/Brewfile` |
+| Everything system-level, macOS | `brew update && brew upgrade && brew bundle --file=~/dev/dotfiles/os/Brewfile`; CLI tools ride `mise upgrade`; `mise self-update` for mise itself |
 | Ghostty on Linux | bump `GHOSTTY_TAG` in `os/linux.sh`, remove the package, re-run `os/linux.sh` |
 | Emacs packages | `M-x package-upgrade-all`, then `M-x package-autoremove`; `M-x package-vc-upgrade` for `claude-code-ide` |
 | Toolchains and LSP servers | `mise upgrade` |
