@@ -103,7 +103,7 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
    - Runs `install.sh` (symlinks, archive of anything in the way, stale-link pruning).
    - Runs `os/macos.sh`:
      - `brew bundle` against `os/Brewfile`: `emacs-plus@30` (native-comp, a source build), Ghostty, Claude Code, the Nerd Font;
-     - installs `mise` as a prebuilt binary into `~/.local/bin` (its Homebrew formula compiles Rust on any macOS without bottles); the CLI tools (`jq`, `fzf`, `eza`, `zoxide`, `ripgrep`, `fd`, `bat`, `delta`, `direnv`, `shellcheck`) come through mise from `config/mise/conf.d/macos.toml`, so a macOS release Homebrew no longer bottles for still installs in a minute;
+     - installs `mise` as a prebuilt binary into `~/.local/bin` (its Homebrew formula compiles Rust on any macOS without bottles); the CLI tools (`jq`, `fzf`, `eza`, `zoxide`, `ripgrep`, `fd`, `bat`, `delta`, `direnv`, `shellcheck`) come through mise from `config/mise/conf.d/macos.toml`, so a macOS release Homebrew no longer bottles for still installs in a minute. Homebrew copies of those same tools are uninstalled so `brew upgrade` never compiles them;
      - copies `Emacs.app` to `/Applications` so Spotlight and the Dock can launch it;
      - starts the Emacs daemon via `brew services` (a launchd agent); both Emacs steps are skipped if preflight kept an Emacs you already had;
      - makes `/bin/zsh` the login shell if it is not;

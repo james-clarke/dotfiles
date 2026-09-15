@@ -16,6 +16,9 @@ brew bundle --file="$REPO/os/Brewfile"
 
 step "mise (prebuilt binary; the Homebrew formula compiles Rust on any macOS without bottles)"
 [ -x "$HOME/.local/bin/mise" ] || curl -fsSL https://mise.run | MISE_INSTALL_PATH="$HOME/.local/bin/mise" sh
+dupes=$(brew list --formula 2>/dev/null | grep -xE 'mise|jq|fzf|eza|zoxide|ripgrep|fd|bat|git-delta|direnv|shellcheck' | tr '\n' ' ')
+# shellcheck disable=SC2086
+[ -z "$dupes" ] || { echo "removing Homebrew copies mise now provides: $dupes"; brew uninstall -q --ignore-dependencies $dupes; }
 
 step "emacs daemon"
 if [ "$KEEP_EMACS" = keep ]; then
