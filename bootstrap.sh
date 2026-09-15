@@ -16,7 +16,7 @@ step "git + ssh"
 missing=""
 command -v git >/dev/null || missing="$missing git"
 { [ -n "$(git config --global user.name 2>/dev/null)" ] && [ -n "$(git config --global user.email 2>/dev/null)" ]; } || missing="$missing identity"
-out=$(ssh -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -T git@github.com 2>&1 || true)
+out=$(ssh -n -o BatchMode=yes -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -T git@github.com 2>&1 || true)
 case $out in *"successfully authenticated"*) ;; *) missing="$missing ssh" ;; esac
 if [ -n "$missing" ]; then
   cat <<EOF
