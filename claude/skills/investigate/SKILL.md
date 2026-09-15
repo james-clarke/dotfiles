@@ -37,4 +37,4 @@ Target = `$ARGUMENTS`. Fan heavy fetching to subagents (`model: "haiku"` for pur
 
 ## 4. Stop
 
-Wait for questions and direction. Answer follow-ups from loaded context; fan new lookups to haiku subagents. When the user says build, hand off to `/flow dev <KEY>` with the brief; orient is already done, it starts at the plan.
+Wait for questions and direction. Answer follow-ups from loaded context; fan new lookups to haiku subagents. When the user says "walk me through it", the walkthrough protocol in the global rules applies: one step at a time, they type.

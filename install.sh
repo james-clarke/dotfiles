@@ -18,7 +18,6 @@ LINKS=(
   "claude/CLAUDE.md:$HOME/.claude/CLAUDE.md"
   "claude/settings.json:$HOME/.claude/settings.json"
   "claude/statusline.sh:$HOME/.claude/statusline.sh"
-  "claude/output-styles:$HOME/.claude/output-styles"
   "claude/skills:$HOME/.claude/skills"
   "config/git/config:$HOME/.config/git/config"
   "config/git/ignore:$HOME/.config/git/ignore"

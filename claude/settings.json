@@ -4,15 +4,38 @@
   },
   "permissions": {
     "allow": [
-      "Bash(git remote *)",
-      "Bash(git log *)",
       "Bash(git status*)",
+      "Bash(git log *)",
       "Bash(git diff*)",
       "Bash(git show *)",
-      "Bash(git branch*)",
-      "Bash(git worktree list*)",
-      "Bash(git stash list*)",
+      "Bash(git branch)",
+      "Bash(git branch -a)",
+      "Bash(git branch -v)",
+      "Bash(git branch --show-current)",
+      "Bash(git branch --list *)",
       "Bash(git blame *)",
+      "Bash(git grep *)",
+      "Bash(git ls-files*)",
+      "Bash(git rev-parse *)",
+      "Bash(git remote -v)",
+      "Bash(git stash list*)",
+      "Bash(git worktree list*)",
+      "Bash(git tag -l*)",
+      "Bash(git cat-file *)",
+      "Bash(rg *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(ls *)",
+      "Bash(wc *)",
+      "Bash(cut *)",
+      "Bash(jq *)",
+      "Bash(diff *)",
+      "Bash(stat *)",
+      "Bash(file *)",
+      "Bash(which *)",
+      "Bash(mise ls*)",
+      "Bash(mise which *)",
       "Read(~/**)",
       "Read(//tmp/**)",
       "WebFetch(domain:github.com)",
@@ -20,6 +43,10 @@
       "WebSearch"
     ],
     "deny": [
+      "Edit",
+      "MultiEdit",
+      "Write",
+      "NotebookEdit",
       "Bash(git push*)"
     ],
     "defaultMode": "default",
@@ -35,7 +62,6 @@
   "enabledPlugins": {
     "typescript-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
-    "remember@claude-plugins-official": true,
     "caveman@caveman": true
   },
   "extraKnownMarketplaces": {
@@ -46,7 +72,6 @@
       }
     }
   },
-  "outputStyle": "Learning",
   "language": "English",
   "includeCoAuthoredBy": false,
   "spinnerTipsEnabled": false,
@@ -60,36 +85,5 @@
   "verbose": false,
   "preferredNotifChannel": "notifications_disabled",
   "autoCompactEnabled": false,
-  "terminalProgressBarEnabled": false,
-  "sandbox": {
-    "enabled": true,
-    "autoAllowBashIfSandboxed": true,
-    "allowUnsandboxedCommands": true,
-    "failIfUnavailable": false,
-    "filesystem": {
-      "allowWrite": [
-        "~/.cache",
-        "~/.npm"
-      ]
-    },
-    "network": {
-      "tlsTerminate": {},
-      "allowedDomains": [
-        "github.com",
-        "*.github.com",
-        "*.githubusercontent.com",
-        "registry.npmjs.org",
-        "pypi.org",
-        "files.pythonhosted.org"
-      ]
-    },
-    "credentials": {
-      "files": [
-        {
-          "path": "~/.ssh/id_ed25519",
-          "mode": "deny"
-        }
-      ]
-    }
-  }
+  "terminalProgressBarEnabled": false
 }

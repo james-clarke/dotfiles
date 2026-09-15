@@ -1,6 +1,6 @@
 # dotfiles
 
-A lean, keyboard-driven development environment for **Debian 13 + KDE Plasma 6** and **macOS**, built around **Emacs 30** (evil, vertico, eglot), a framework-free **zsh**, **Ghostty**, **mise**, git, and **Claude Code** running inside Emacs with every proposed edit shown as an ediff. One command bootstraps a fresh machine on either OS, and asks before touching anything an existing machine already has; every file is symlinked from this repo so edits are versioned; CI proves the shell and the Emacs config load cleanly on both platforms.
+A lean, keyboard-driven development environment for **Debian 13 + KDE Plasma 6** and **macOS**, built around **Emacs 30** (evil, vertico, eglot), a framework-free **zsh**, **Ghostty**, **mise**, git, and **Claude Code** running inside Emacs as a read-only partner: it investigates, plans and walks you through, you type, `minuet` completes. One command bootstraps a fresh machine on either OS, and asks before touching anything an existing machine already has; every file is symlinked from this repo so edits are versioned; CI proves the shell and the Emacs config load cleanly on both platforms.
 
 Nothing here is tied to a person or an employer. Fork it, change one URL, and it is yours.
 
@@ -46,7 +46,7 @@ Nothing here is tied to a person or an employer. Fork it, change one URL, and it
 | Toolchains | mise | node, uv, LSP servers; one global config, per-project overrides |
 | Git | delta pager, sane defaults | Identity, keys and signing stay whatever the machine already has |
 | Fonts | CommitMono Nerd Font | Ligatures + icons, installed by bootstrap |
-| AI | Claude Code CLI, `claude-code-ide.el` | apt repo on Linux, Homebrew cask on macOS; runs inside Emacs (`SPC a c`), sees your buffer and diagnostics, proposes edits as ediff sessions; asks before every edit unless you opt into agentic mode |
+| AI | Claude Code CLI, `claude-code-ide.el`, `minuet` | Claude runs inside Emacs (`SPC a c`), sees your buffer and diagnostics, and cannot edit files: it investigates, plans and walks you through; you type. minuet gives ghost-text completion that reads the Claude window for context |
 | Package managers | apt / Homebrew for everything with a package | Upgrades ride `apt upgrade` / `brew upgrade` |
 
 Package counts stay small on purpose. Emacs pulls two dozen packages (plus their dependencies) from GNU ELPA, NonGNU ELPA and MELPA through the built-in `package.el`. There is no elpaca, straight, doom, or spacemacs layer.
@@ -124,12 +124,13 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
 
 | It finds | Choices | Notes |
 |---|---|---|
-| `~/.zshrc`, `~/.zprofile`, `~/.zlogin`, `~/.zshenv`, `~/.oh-my-zsh` | archive (suggested) / keep | zsh reads only `~/.zshenv` from `$HOME` once `ZDOTDIR` is set; kept files are dead weight |
+| `~/.zshrc`, `~/.zprofile`, `~/.zlogin`, `~/.oh-my-zsh` | archive (suggested) / keep | zsh reads only `~/.zshenv` from `$HOME` once `ZDOTDIR` is set; kept files are dead weight |
+| `~/.zshenv` | not asked | the one file the repo must own (it sets `ZDOTDIR`); `install.sh` archives yours and links its own |
 | `~/.bashrc`, `~/.bash_profile` | keep (suggested) / archive | bash still uses them |
 | `~/.emacs`, `~/.emacs.el`, `~/.emacs.d` | archive (suggested) / keep | Emacs prefers these and ignores `~/.config/emacs` while they exist; keep means the repo config does not load |
-| An Emacs already installed (macOS: `/Applications/Emacs.app`, `brew` formula or cask) | keep (suggested) / replace | keep skips `emacs-plus@30` and the `brew services` daemon; you run `emacs --daemon` your way. replace installs `emacs-plus@30` and prints the uninstall command for the old one; it never uninstalls for you |
+| An Emacs already installed (macOS: `/Applications/Emacs.app`, `brew` formula or cask) | keep (suggested) / replace | keep skips `emacs-plus@30` and the `brew services` daemon; you run `emacs --daemon` your way, and preflight warns if no `emacsclient` is on PATH. replace makes `os/macos.sh` uninstall a `brew` `emacs` formula, archive a foreign `/Applications/Emacs.app` and install `emacs-plus@30` |
 | `~/.gitconfig` | report only | git reads it after `~/.config/git/config`, so its identity, signing and helper settings override the repo defaults. Never touched |
-| `~/.claude/{CLAUDE.md,settings.json,statusline.sh,output-styles,skills}` that are not repo links | keep (suggested) / replace | keep makes `install.sh` skip the whole `claude` group (`DOTFILES_SKIP=claude` does the same by hand). If your `settings.json` has a `hooks` block it says so; the repo copy has none |
+| `~/.claude/{CLAUDE.md,settings.json,statusline.sh,skills}` that are not repo links | keep (suggested) / replace | keep makes `install.sh` skip the whole `claude` group (`DOTFILES_SKIP=claude` does the same by hand). If your `settings.json` has a `hooks` block it says so; the repo copy has none |
 | `~/.nvm`, `~/.pyenv`, `~/.rbenv`, `~/.asdf` | report only | mise covers them; remove when ready |
 
 ---
@@ -144,14 +145,19 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
    jq -r '.enabledPlugins | keys[]' ~/dev/dotfiles/claude/settings.json | xargs -n1 claude plugin install
    ```
 
-3. Verify that every symlink survived (Claude's `/model` command and some apps rewrite files; this catches it):
+3. Get an [OpenRouter](https://openrouter.ai/keys) API key: buy a few dollars of credit (Stripe checkout, Apple Pay works), create a key. Nothing to configure: the first time you press `M-i` in a code buffer, Emacs asks for the key in the minibuffer and offers to save it to `~/.authinfo` (mode 600). Until then minuet stays quiet and says so once per session. Prefer it encrypted? Write the line into `~/.authinfo.gpg` yourself instead:
+   ```
+   machine openrouter.ai login apikey password sk-or-v1-...
+   ```
+
+4. Verify that every symlink survived (Claude's `/model` command and some apps rewrite files; this catches it):
    ```sh
    ~/dev/dotfiles/install.sh check
    ```
 
-4. Open Emacs: `Meta+E` on KDE, Spotlight → "Emacs" on macOS, or `e file` in any terminal. The first launch installs the Emacs packages, including a `git clone` of `claude-code-ide.el` (one to two minutes, once). Native compilation runs in the background afterwards; ignore the `*Async-native-compile-log*` buffer.
+5. Open Emacs: `Meta+E` on KDE, Spotlight → "Emacs" on macOS, or `e file` in any terminal. The first launch installs the Emacs packages, including a `git clone` of `claude-code-ide.el` (one to two minutes, once). Native compilation runs in the background afterwards; ignore the `*Async-native-compile-log*` buffer.
 
-5. Linux only, if bootstrap ran outside a Plasma session: run `~/dev/dotfiles/kde/apply.sh` now, then log out and in.
+6. Linux only, if bootstrap ran outside a Plasma session: run `~/dev/dotfiles/kde/apply.sh` now, then log out and in.
 
 ---
 
@@ -189,11 +195,10 @@ kde/
   dotfiles-emacs.desktop hidden launcher bound to Meta+E
 claude/
   CLAUDE.md             global rules for Claude Code
-  settings.json         permissions, sandbox, plugins, statusline
+  settings.json         permissions (read-only), plugins, statusline
   statusline.sh         model / effort / project / branch / context / rate-limit line
-  output-styles/        "minimal": the opt-in answer-only style for agentic runs
   skills/investigate/   /investigate: read-only brief of a ticket, PR or area
-  skills/flow/          /flow: ticket dev, PR review, re-review pipelines (agentic)
+  skills/review/        /review: PR review and re-review, drafts only
 .github/workflows/ci.yml  Linux (Debian container) + macOS checks
 ```
 
@@ -245,7 +250,7 @@ emacsclient -e '(kill-emacs)'          # stop the daemon cleanly (either OS)
 
 Built-in and used: `use-package`, `eglot`, `treesit`, `which-key`, `editorconfig`, `project`, `flymake`, `ediff`, `repeat-mode`, `pixel-scroll-precision-mode`, `modus-themes`, `savehist`, `recentf`, `save-place`, `winner`, `dired`, `so-long`, `xterm-mouse-mode`.
 
-Installed from ELPA/MELPA: `gcmh`, `evil`, `evil-collection`, `evil-surround`, `vertico`, `orderless`, `marginalia`, `consult`, `consult-eglot`, `embark`, `embark-consult`, `corfu`, `corfu-terminal`, `cape`, `tempel`, `vundo`, `hl-todo`, `popper`, `treesit-auto`, `apheleia`, `envrc`, `markdown-mode`, `magit`, `diff-hl`, `eat`, `wgrep`, `mood-line`, `ligature`, and on macOS only `exec-path-from-shell`. `claude-code-ide` is not on any archive; `use-package :vc` clones it from GitHub through `package-vc` on first start (`M-x package-vc-upgrade` to update it).
+Installed from ELPA/MELPA: `gcmh`, `evil`, `evil-collection`, `evil-surround`, `vertico`, `orderless`, `marginalia`, `consult`, `consult-eglot`, `embark`, `embark-consult`, `corfu`, `corfu-terminal`, `cape`, `tempel`, `vundo`, `hl-todo`, `popper`, `treesit-auto`, `apheleia`, `envrc`, `markdown-mode`, `magit`, `diff-hl`, `eat`, `minuet`, `wgrep`, `mood-line`, `ligature`, and on macOS only `exec-path-from-shell`. `claude-code-ide` is not on any archive; `use-package :vc` clones it from GitHub through `package-vc` on first start (`M-x package-vc-upgrade` to update it).
 
 Archives are prioritised GNU > NonGNU > MELPA, so a package available on GNU ELPA never comes from MELPA. `custom.el` (written by Emacs, holds `package-selected-packages`) lives in `~/.config/emacs/`, outside the repo.
 
@@ -274,11 +279,11 @@ evil is vim. `C-u` scrolls up, `Y` yanks to end of line, undo is the built-in `u
 | `SPC c c` / `c r` | project compile / recompile |
 | `SPC o t` / `o T` / `o d` | terminal in project root / terminal here / dired |
 | `SPC t t` / `t l` / `t w` / `t f` / `t p` / `t P` | toggle theme / line numbers / word wrap / fullscreen / popup window / cycle popups |
-| `SPC a c` / `a A` / `a a` / `a t` | Claude Code in this project: start (asks before each edit) / start agentic (`acceptEdits`) / transient menu / show or hide its window |
+| `SPC a c` / `a a` / `a t` | Claude Code in this project: start / transient menu / show or hide its window |
 | `SPC a s` / `a r` / `a C` / `a R` / `a q` | send a prompt / send the region / continue last session / resume a session / stop |
 | `SPC q q` / `q f` | quit Emacs / close frame |
 
-Non-leader: `C-s` consult-line, `C-.` embark-act, `C-;` embark-dwim, `C-x g` magit, `C-j` / `C-k` move in vertico and corfu popups, `<` narrows a consult list (e.g. `SPC ,` then `< b` for buffers only, `< f` for files), `TAB` completes or indents, `M-+` inserts a tempel snippet by name (they also show up in the corfu popup), `M-x` still works. Popups (`*Messages*`, `*Warnings*`, help, compilation, flymake lists, plain `eat` terminals) open in a bottom window that `SPC t p` hides and brings back.
+Non-leader: `C-s` consult-line, `C-.` embark-act, `C-;` embark-dwim, `C-x g` magit, `C-j` / `C-k` move in vertico and corfu popups, `<` narrows a consult list (e.g. `SPC ,` then `< b` for buffers only, `< f` for files), `TAB` completes or indents, `M-+` inserts a tempel snippet by name (they also show up in the corfu popup), `M-x` still works. Ghost text from minuet in insert state: `M-a` takes one line, `M-y` takes all of it, `M-e` dismisses, `M-n` / `M-p` cycle, `M-i` asks for a suggestion now ([Claude Code](#claude-code)). Popups (`*Messages*`, `*Warnings*`, help, compilation, flymake lists, plain `eat` terminals) open in a bottom window that `SPC t p` hides and brings back.
 
 ### Languages
 
@@ -405,31 +410,36 @@ Plasma 6 removed the "Custom Shortcuts" module; launching a command from a short
 
 ## Claude Code
 
-The setup has two postures. The default one is for learning: Claude explains, you decide, every edit is a diff you accept or reject. The other is agentic and one keystroke away.
+One posture: Claude reads, researches, debugs, reviews and plans. You write the code. The point is to keep the understanding that comes from typing it, and to have a session that knows the codebase and the goal sitting next to the buffer while you do.
 
-### Default: learn
+### What Claude can and cannot do
 
-- `defaultMode` is `default` (Manual): every file edit and every non-read-only command asks first. `git push` is denied outright; Claude prints the command, you run it.
-- `outputStyle` is Claude Code's built-in **Learning**: it explains the why as it goes and leaves `TODO(human)` stubs for the parts worth writing yourself.
-- `claude/CLAUDE.md` says the rest: a question gets the approach and the tradeoffs, not a diff; edits only when you say build; small edits, one at a time; plan mode first for anything wide.
-- `/investigate <ticket | PR | path | topic>` builds a read-only brief (ticket, PR threads, code map with `file:line`, prior art, open questions) and stops. Ask it things; when you say build it hands off to `/flow dev`.
+- **No edits, ever.** `settings.json` denies `Edit`, `MultiEdit`, `Write` and `NotebookEdit`. A deny rule holds under every permission mode and every command-line flag; the only way to get an agent editing files is to change `settings.json`. Nothing on disk comes from a session except Claude Code's own transcripts under `~/.claude/projects`.
+- **Read-only shell without prompts.** `rg`, `cat`, `head`, `tail`, `ls`, `wc`, `cut`, `jq`, `diff`, `stat`, `file`, `which`, `mise ls` and the read-only git subcommands are allowed; file finding goes through Claude's own Glob and Grep tools, which never prompt. Tools that can write or execute through a flag (`fd -x`, `tree -o`, `sort -o`) are deliberately not on the list. A shell redirection (`cat x > y`) is checked against the file rules as a write, so the `Write` deny catches it. Anything that mutates, including running your tests or a server, prompts once; `git push` is denied. Answer a prompt with "yes", not "always": "always" writes `.claude/settings.local.json` into the project (globally gitignored, but still a file).
+- **No sandbox.** Commands run on the machine as you.
+- **Read anywhere.** `Read(~/**)` and `/tmp`, so it can look at other repos, logs and dotfiles when the question needs it.
+- `claude/CLAUDE.md` says the rest. A question gets the approach, the tradeoffs and the `file:line` involved. "Walk me through it" gets one step at a time (`file:line`, what to write, why), then Claude waits for "next" and reads your buffer before the next step, so the steps track what you actually typed.
+- `/investigate <ticket | PR | path | topic>` builds a read-only brief (ticket, PR threads, code map with `file:line`, prior art, open questions) and stops. `/review <PR#>` runs the adversarial review lenses over a PR and drafts comments in your voice; you post them. Both assume a ticket tracker or code host reachable over MCP for the fetching parts and fall back to asking you to paste.
 
 ### Inside Emacs
 
-`claude-code-ide.el` runs the real Claude Code TUI in an `eat` window, so every plugin, skill and the statusline work unchanged, and it registers Emacs as Claude's IDE over MCP: Claude sees the current buffer and selection, can read flymake diagnostics, xref, imenu and project info, and **every edit it proposes opens as an ediff session** in Emacs: buffer A is your file, buffer B is Claude's version. `n`/`p` walk the hunks; edit B if you want it different; `q` closes the session and asks `y`/`n`, and whatever B contains goes back to Claude to apply. That is the whole review loop, and it never leaves the editor.
+`claude-code-ide.el` runs the real Claude Code TUI in an `eat` window, so every plugin, skill and the statusline work unchanged, and it registers Emacs as Claude's IDE over MCP: Claude sees the current buffer and selection and can read flymake diagnostics, xref, imenu and project info. `SPC a c` starts it for the current project, `SPC a r` sends the region into the prompt, `SPC a s` sends a typed prompt, `SPC a t` hides and shows the window, `SPC a C` / `a R` continue or resume a session, `SPC a a` opens the transient menu with everything else. Outside Emacs, `claude` in Ghostty is the same thing minus the buffer awareness.
 
-`SPC a c` starts Claude for the current project in the default posture. `SPC a A` starts it agentic (`--permission-mode acceptEdits`). `SPC a r` sends the region into the prompt, `SPC a s` sends a typed prompt, `SPC a t` hides and shows the window, `SPC a a` opens the transient menu with everything else. Shift+Tab inside the Claude window cycles the permission mode mid-session.
+### Completion: minuet
 
-Outside Emacs, `claude` in Ghostty is the same thing without the ediff loop; `global-auto-revert-mode` refreshes buffers and magit shows the diff. `claude-build` is an alias for `claude --permission-mode acceptEdits`.
+`minuet` puts multi-line ghost text under the cursor, from Gemini Flash-Lite routed through OpenRouter: a chat model, chosen because the "stay silent unless certain" rule below is an instruction, and pure fill-in-the-middle endpoints (Codestral, a local Ollama) cannot take one. OpenRouter because it is one prepaid key for any model and no Google Cloud billing to fight; at Flash-Lite prices a day of typing costs a few cents. Another model is one string in `init.el` (`:model` in `minuet-openai-compatible-options`); another provider is `minuet-provider` plus its options plist, and minuet also speaks Gemini, OpenAI, Codestral, DeepSeek, Ollama and the Anthropic API directly. It is built to stay out of the way:
 
-### Opt-in: agentic
+- It only fires in insert state, at the end of a line, when corfu's popup is not up, at most every 1.5 seconds. LSP completion always has right of way; minuet gets the quiet spots, after a `(`, a `=`, a `:` or a newline.
+- The prompt tells the model to return nothing unless the surrounding code and the conversation make the next code certain. No overlay appears for an empty answer, so a bad guess costs nothing but the request.
+- One candidate, never a menu. `M-a` accepts a line, and that is the habit worth keeping; `M-y` accepts the whole block; `M-e` dismisses; typing on dismisses too. `M-i` asks for a suggestion on demand.
+- The bridge to the session: when a Claude window is open for the project, the last 60 lines of it go into the completion prompt, so what you and Claude just agreed on shapes the suggestion. No file is written anywhere for this. If it turns out noisy, drop `dot/minuet-chat-tail` from `dot/minuet-prompt` in `init.el`.
+- Too chatty overall: remove the `prog-mode` hook and keep `M-i`. That is on-demand mode, and some people prefer it.
 
-`SPC a A` or `claude-build` starts with edits auto-accepted; `/config` → Output style → **Minimal** (`claude/output-styles/minimal.md`, answer-first, no narration) fits that mode. `/flow dev <ticket>`, `/flow pr <PR#>` and `/flow repr <PR#>` are the pipelines for it: ticket development with a plan gate and a staged-diff gate, PR review and re-review with adversarial multi-agent lenses. They are framework-agnostic and read each repo's `AGENTS.md`.
+The API key comes from `auth-source`: the first `M-i` asks for it and offers to save it to `~/.authinfo`, or you put it in `~/.authinfo.gpg` yourself (see [After bootstrap](#after-bootstrap)). Without a key, auto-suggestion is blocked and nothing else changes.
 
 ### The rest of `settings.json`
 
-- **Sandbox**: on, with network egress limited to GitHub, npm and PyPI; the private SSH key is hidden. Bubblewrap (Linux) or Seatbelt (macOS) provides the isolation.
-- **Plugins**: `typescript-lsp`, `pyright-lsp`, `remember`, `caveman`. Install them once with the `jq | xargs` one-liner in [After bootstrap](#after-bootstrap). `caveman` comes from a third-party marketplace (`JuliusBrussee/caveman`); drop both entries if you do not want it.
+- **Plugins**: `typescript-lsp`, `pyright-lsp` (diagnostics for Claude's reading), `caveman` (terse answers; from a third-party marketplace, `JuliusBrussee/caveman`; drop both entries if you do not want it). Install them once with the `jq | xargs` one-liner in [After bootstrap](#after-bootstrap).
 - **Statusline**: `claude/statusline.sh` shows exceptions only: model, `project:branch`, effort when it is not `high`, context usage with a hand-off warning at 25 %, and the 5h/7d rate-limit windows once they pass 50 %. One `jq` call, plus `git` for the branch.
 - **Not managed**: `~/.claude/hooks` and `settings.local.json` are yours; `install.sh` never touches them, and preflight offers to keep an existing `~/.claude` whole.
 
@@ -471,8 +481,8 @@ Locally: `~/dev/dotfiles/install.sh check` after anything that might have replac
 1. Fork on GitHub, then in `bootstrap.sh` change `REPO_URL`, or run it with `DOTFILES_REPO=git@github.com:you/dotfiles`.
 2. Edit `os/apt-packages.txt` and `os/Brewfile` to taste.
 3. Adjust `kde/apply.sh` and `os/macos/defaults.sh`; both are lists of individual settings, remove lines you do not want.
-4. `claude/settings.json`: change or drop `model` (it names a specific tier), the plugins (`caveman` and its `extraKnownMarketplaces` entry point at a third-party GitHub repo), the allowed network domains, and `Read(~/**)` if you want Claude confined to your working directories.
-5. `claude/skills/flow` assumes a ticket tracker reachable over MCP; `/investigate` works without it. Delete what you do not use.
+4. `claude/settings.json`: change or drop `model` (it names a specific tier), the plugins (`caveman` and its `extraKnownMarketplaces` entry point at a third-party GitHub repo), and `Read(~/**)` if you want Claude confined to your working directories. Remove the `Edit`/`Write` denies if you want an agent that edits; nothing else in the repo assumes it cannot.
+5. `claude/skills/review` assumes a code host reachable over MCP or comments pasted by hand; `/investigate` works on a bare path. Delete what you do not use. `minuet` in `init.el` needs an OpenRouter API key; without one it does nothing.
 6. Nothing else references a person: git identity and SSH keys are whatever the machine already has; bootstrap only checks they exist.
 
 ---
@@ -487,7 +497,9 @@ Locally: `~/dev/dotfiles/install.sh check` after anything that might have replac
 
 **Emacs ignores the repo config.** A `~/.emacs`, `~/.emacs.el` or `~/.emacs.d` exists; Emacs loads that and never looks at `~/.config/emacs`. Re-run `preflight.sh` and archive it, or move it yourself.
 
-**Claude in Emacs: "claude not found" or no ediff.** The daemon's PATH must contain `claude` (`emacsclient -e '(executable-find "claude")'`). On macOS `exec-path-from-shell` copies it from a login shell; on Linux it is `/usr/bin/claude` from apt. No ediff means the Claude session was started outside Emacs; start it with `SPC a c` so it connects to Emacs over MCP.
+**Claude in Emacs: "claude not found" or it cannot see the buffer.** The daemon's PATH must contain `claude` (`emacsclient -e '(executable-find "claude")'`). On macOS `exec-path-from-shell` copies it from a login shell; on Linux it is `/usr/bin/claude` from apt. No buffer awareness means the Claude session was started outside Emacs; start it with `SPC a c` so it connects over MCP.
+
+**minuet shows nothing.** No key yet means no auto-suggestions; `M-i` asks for the key. Otherwise check `*minuet*` (the log buffer). A 402 in the log means the OpenRouter credit ran out. Otherwise it is working as designed: the model returned nothing because it was not sure. `M-i` forces a request.
 
 **Emacs starts but packages are missing.** First launch needs network to ELPA/MELPA. `M-x package-refresh-contents`, then `M-x package-install-selected-packages`. Corporate proxies: set `url-proxy-services` in `custom.el`.
 
@@ -498,7 +510,5 @@ Locally: `~/dev/dotfiles/install.sh check` after anything that might have replac
 **KDE shortcut does nothing.** Log out and in; `kglobalaccel` does not always pick up file changes. Check `~/.local/share/applications/dotfiles-emacs.desktop` exists.
 
 **Ghostty not installed on Linux.** No community build for your Debian codename. Check <https://github.com/mkasberg/ghostty-ubuntu/releases>, bump `GHOSTTY_TAG` and the `GHOSTTY_SHA256_*` values in `os/linux.sh` (the release API lists each asset's `digest`), or build from source. Konsole is bound to `Meta+Return` meanwhile.
-
-**Claude Code sandbox cannot reach a host.** Add the domain to `sandbox.network.allowedDomains` in `claude/settings.json` or run `/sandbox` inside Claude.
 
 **macOS: Caps Lock is still Caps Lock.** `launchctl list | grep capslock` should show the agent; `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.dotfiles.capslock.plist` loads it. Some keyboards need the remap re-applied after sleep; the agent runs at login only.

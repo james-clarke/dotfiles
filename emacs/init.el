@@ -184,7 +184,6 @@
   "t P" #'popper-cycle
   "a a" #'claude-code-ide-menu
   "a c" #'claude-code-ide
-  "a A" #'dot/claude-code-ide-agentic
   "a t" #'claude-code-ide-toggle
   "a s" #'claude-code-ide-send-prompt
   "a r" #'claude-code-ide-insert-at-mentioned
@@ -328,14 +327,69 @@
 (use-package claude-code-ide
   :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
   :custom (claude-code-ide-terminal-backend 'eat)
-  :init
-  (defvar claude-code-ide-cli-extra-flags)
-  (defun dot/claude-code-ide-agentic ()
-    "Start Claude Code with edits auto-accepted; the default session asks before every edit."
-    (interactive)
-    (let ((claude-code-ide-cli-extra-flags "--permission-mode acceptEdits"))
-      (claude-code-ide)))
   :config (claude-code-ide-emacs-tools-setup))
+
+(use-package minuet
+  :hook (prog-mode . dot/minuet-on)
+  :bind (:map evil-insert-state-map ("M-i" . minuet-show-suggestion)
+         :map minuet-active-mode-map
+         ("M-a" . minuet-accept-suggestion-line)
+         ("M-y" . minuet-accept-suggestion)
+         ("M-e" . minuet-dismiss-suggestion)
+         ("M-n" . minuet-next-suggestion)
+         ("M-p" . minuet-previous-suggestion))
+  :custom
+  (minuet-provider 'openai-compatible)
+  (minuet-n-completions 1)
+  (minuet-auto-suggestion-throttle-delay 1.5)
+  (minuet-auto-suggestion-block-predicates
+   '(minuet-evil-not-insert-state-p dot/minuet-no-key-p dot/minuet-corfu-open-p dot/minuet-mid-line-p))
+  :init
+  (defconst dot/minuet-host "openrouter.ai")
+  (defun dot/minuet-no-key-p ()
+    (not (auth-source-search :host dot/minuet-host :max 1)))
+  (defun dot/minuet-key ()
+    "The OpenRouter key from auth-source. First use asks for it and offers to save it to ~/.authinfo."
+    (when-let* ((entry (car (auth-source-search :host dot/minuet-host :user "apikey" :max 1 :create t)))
+                (secret (plist-get entry :secret)))
+      (when-let* ((save (plist-get entry :save-function)))
+        (funcall save)
+        (when (file-exists-p "~/.authinfo") (set-file-modes (expand-file-name "~/.authinfo") #o600)))
+      (if (functionp secret) (funcall secret) secret)))
+  (defvar dot/minuet-told nil)
+  (defun dot/minuet-on ()
+    (minuet-auto-suggestion-mode)
+    (when (and (not dot/minuet-told) (dot/minuet-no-key-p))
+      (setq dot/minuet-told t)
+      (message "minuet: no OpenRouter API key yet; M-i in insert state asks for one")))
+  (defun dot/minuet-corfu-open-p () completion-in-region-mode)
+  (defun dot/minuet-mid-line-p () (not (eolp)))
+  (defun dot/minuet-chat-tail ()
+    "Last 60 lines of this project's Claude Code window, or nil when it is not open."
+    (when-let* ((buf (and (fboundp 'claude-code-ide--get-buffer-name)
+                          (get-buffer (claude-code-ide--get-buffer-name)))))
+      (with-current-buffer buf
+        (save-excursion
+          (goto-char (point-max))
+          (forward-line -60)
+          (buffer-substring-no-properties (point) (point-max))))))
+  (defun dot/minuet-prompt ()
+    (concat minuet-default-prompt-prefix-first
+            (when-let* ((chat (dot/minuet-chat-tail)))
+              (concat "\nThe user is discussing this code with an assistant. The end of that conversation follows; use it for intent, names and conventions only.\n<conversation>\n"
+                      chat "\n</conversation>\n"))))
+  :config
+  (require 'auth-source)
+  (setq minuet-openai-compatible-options
+        (plist-put minuet-openai-compatible-options :model "google/gemini-2.5-flash-lite"))
+  (setq minuet-openai-compatible-options
+        (plist-put minuet-openai-compatible-options :api-key #'dot/minuet-key))
+  (let ((system (plist-get minuet-openai-compatible-options :system)))
+    (plist-put system :prompt #'dot/minuet-prompt)
+    (plist-put system :guidelines
+               (concat minuet-default-guidelines
+                       "\n8. Complete only when the surrounding code and the conversation make the next code certain. If you would be guessing at a name, a value or the user's intent, return nothing at all."))
+    (plist-put system :n-completions-template "9. Provide at most %d completion items.")))
 
 ;;; ---------- ui ----------
 (setq modus-themes-italic-constructs t

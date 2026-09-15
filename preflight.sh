@@ -44,7 +44,8 @@ archive() {
 ours() { [ -L "$1" ] && [[ $(readlink "$1") == "$REPO/"* ]]; }
 
 step "shell files in \$HOME"
-for f in .zshrc .zprofile .zlogin .zshenv .oh-my-zsh .bashrc .bash_profile; do
+{ [ -e "$HOME/.zshenv" ] || [ -L "$HOME/.zshenv" ]; } && ! ours "$HOME/.zshenv" && echo "note       ~/.zshenv is the one file the repo must own (it sets ZDOTDIR); install.sh archives yours and links its own"
+for f in .zshrc .zprofile .zlogin .oh-my-zsh .bashrc .bash_profile; do
   p="$HOME/$f"
   { [ -e "$p" ] || [ -L "$p" ]; } || continue
   ours "$p" && continue
@@ -74,8 +75,9 @@ if [ "$(uname -s)" = Darwin ] && command -v brew >/dev/null && ! brew list --for
   brew list --cask 2>/dev/null | grep -qx emacs && have="$have cask:emacs"
   if [ -n "$have" ]; then
     case $(ask emacs/install "Emacs is already installed ($have); the repo installs emacs-plus@30 and runs it as a daemon" keep "keep replace") in
-      keep)    echo "kept       $have  (emacs-plus@30 skipped; run your own daemon: emacs --daemon)" ;;
-      replace) echo "replacing  emacs-plus@30 will be installed; remove the old one yourself: brew uninstall emacs, rm -r /Applications/Emacs.app" ;;
+      keep)    echo "kept       $have  (emacs-plus@30 skipped; run your own daemon: emacs --daemon)"
+               command -v emacsclient >/dev/null || echo "warn       emacsclient is not on PATH; EDITOR, the e/eg aliases and git commit need it" ;;
+      replace) echo "replacing  os/macos.sh uninstalls the brew emacs formula, archives /Applications/Emacs.app and installs emacs-plus@30" ;;
     esac
   fi
 fi
@@ -85,7 +87,7 @@ step "git"
 
 step "claude code"
 have=""
-for f in CLAUDE.md settings.json statusline.sh output-styles skills; do
+for f in CLAUDE.md settings.json statusline.sh skills; do
   p="$HOME/.claude/$f"
   { [ -e "$p" ] || [ -L "$p" ]; } || continue
   ours "$p" && continue

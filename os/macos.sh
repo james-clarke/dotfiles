@@ -18,7 +18,15 @@ step "emacs daemon"
 if [ "$KEEP_EMACS" = keep ]; then
   echo "kept your Emacs per preflight; run its daemon yourself (emacs --daemon)"
 else
-  [ -e /Applications/Emacs.app ] || cp -r "$(brew --prefix)/opt/emacs-plus@30/Emacs.app" /Applications/
+  APP="$(brew --prefix)/opt/emacs-plus@30/Emacs.app"
+  if [ "$KEEP_EMACS" = replace ]; then
+    brew list --formula 2>/dev/null | grep -qx emacs && brew uninstall emacs
+    if [ -e /Applications/Emacs.app ] && ! diff -q "$APP/Contents/Info.plist" /Applications/Emacs.app/Contents/Info.plist >/dev/null 2>&1; then
+      OLD="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/archive/$(date +%Y%m%d-%H%M%S)/Applications"
+      mkdir -p "$OLD" && mv /Applications/Emacs.app "$OLD/" && echo "archived   /Applications/Emacs.app -> $OLD/"
+    fi
+  fi
+  [ -e /Applications/Emacs.app ] || cp -r "$APP" /Applications/
   brew services list | grep -qE '^emacs-plus@30\s+started' || brew services start d12frosted/emacs-plus/emacs-plus@30
 fi
 
@@ -27,7 +35,7 @@ LA="$HOME/Library/LaunchAgents/com.dotfiles.capslock.plist"
 mkdir -p "$(dirname "$LA")"
 cp "$REPO/os/macos/capslock.plist" "$LA"
 launchctl bootout "gui/$(id -u)/com.dotfiles.capslock" 2>/dev/null || true
-launchctl bootstrap "gui/$(id -u)" "$LA"
+launchctl bootstrap "gui/$(id -u)" "$LA" || echo "capslock agent not loaded now (no GUI session?); it loads at next login"
 
 step "defaults"
 "$REPO/os/macos/defaults.sh"
