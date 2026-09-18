@@ -70,12 +70,5 @@ if ! command -v claude >/dev/null; then
   sudo apt-get install -y -q claude-code
 fi
 
-step "kde"
-if command -v kwriteconfig6 >/dev/null && [ -n "${KDE_SESSION_VERSION:-}" ]; then
-  "$REPO/kde/apply.sh"
-else
-  echo "not inside a Plasma session; run kde/apply.sh after login"
-fi
-
 step "login shell"
 [ "$(getent passwd "$(id -un)" | cut -d: -f7)" = /usr/bin/zsh ] || chsh -s /usr/bin/zsh

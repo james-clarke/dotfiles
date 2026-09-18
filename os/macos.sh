@@ -31,9 +31,6 @@ cp "$REPO/os/macos/capslock.plist" "$LA"
 launchctl bootout "gui/$UID_/com.dotfiles.capslock" 2>/dev/null || true
 launchctl bootstrap "gui/$UID_" "$LA" || echo "capslock agent not loaded now (no GUI session?); it loads at next login"
 
-step "defaults"
-"$REPO/os/macos/defaults.sh"
-
 step "ssh keychain"
 SSHCFG="$HOME/.ssh/config"
 mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"

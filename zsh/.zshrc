@@ -83,7 +83,6 @@ alias ls='eza --group-directories-first --icons=auto'
 alias la='eza -a --icons=auto'
 alias cp='cp -iv' rm='rm -iv' mkdir='mkdir -pv' df='df -h'
 alias e='emacsclient -t' eg='emacsclient -c -n'
-alias dots="$DEV_DIR/dotfiles/bootstrap.sh"
 export MANPAGER="sh -c 'col -bx | bat -l man -p'" MANROFFOPT='-c'
 
 # --- widgets ---
