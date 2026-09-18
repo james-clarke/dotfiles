@@ -19,12 +19,6 @@
       inhibit-startup-echo-area-message user-login-name
       initial-scratch-message nil
       load-prefer-newer t
-      use-dialog-box nil
       native-comp-async-report-warnings-errors 'silent)
-
-(push '(menu-bar-lines . 0) default-frame-alist)
-(push '(tool-bar-lines . 0) default-frame-alist)
-(push '(vertical-scroll-bars) default-frame-alist)
-(setq menu-bar-mode nil tool-bar-mode nil scroll-bar-mode nil)
 
 ;;; early-init.el ends here

@@ -1,4 +1,4 @@
-;;; init.el --- lean evil + vertico + eglot -*- lexical-binding: t -*-
+;;; init.el --- lean cua + vertico + eglot -*- lexical-binding: t -*-
 
 (when (< emacs-major-version 30) (error "Emacs 30+ required"))
 
@@ -46,7 +46,7 @@
   (text-mode-ispell-word-completion nil)
   (delete-by-moving-to-trash t)
   (confirm-kill-processes nil)
-  (display-line-numbers-type 'relative)
+  (display-line-numbers-type t)
   (frame-title-format '("%b"))
   (uniquify-buffer-name-style 'forward)
   (global-auto-revert-non-file-buffers t)
@@ -57,15 +57,26 @@
   (dired-listing-switches (if (eq system-type 'darwin) "-alh" "-alh --group-directories-first"))
   (which-key-idle-delay 0.4)
   (compilation-scroll-output 'first-error)
+  (mouse-drag-and-drop-region t)
+  (mouse-drag-and-drop-region-cross-program t)
+  (mouse-wheel-tilt-scroll t)
+  (mouse-wheel-flip-direction t)
+  (dired-mouse-drag-files t)
+  (tab-bar-show 1)
+  (tab-line-new-button-show nil)
+  (tab-line-exclude-modes '(completion-list-mode eat-mode help-mode compilation-mode
+                            flymake-diagnostics-buffer-mode messages-buffer-mode))
   :config
   (global-auto-revert-mode)
   (savehist-mode)
   (recentf-mode)
   (save-place-mode)
   (electric-pair-mode)
-  (delete-selection-mode)
   (column-number-mode)
   (pixel-scroll-precision-mode)
+  (context-menu-mode)
+  (tab-bar-mode)
+  (global-tab-line-mode)
   (repeat-mode)
   (which-key-mode)
   (editorconfig-mode)
@@ -92,37 +103,16 @@
   (gcmh-high-cons-threshold (* 64 1024 1024))
   :config (gcmh-mode 1))
 
-;;; ---------- evil ----------
-(use-package evil
-  :init
-  (setq evil-want-integration t
-        evil-want-keybinding nil
-        evil-want-C-u-scroll t
-        evil-want-C-i-jump nil
-        evil-want-Y-yank-to-eol t
-        evil-undo-system 'undo-redo
-        evil-respect-visual-line-mode t
-        evil-split-window-below t
-        evil-vsplit-window-right t
-        evil-search-module 'evil-search
-        evil-ex-search-vim-style-regexp t)
-  :config
-  (defvar evil-mode-buffers nil)
-  (evil-mode 1)
-  (evil-set-leader '(normal visual) (kbd "SPC"))
-  (evil-define-key 'normal 'global (kbd "gcc") #'comment-line (kbd "K") #'eldoc)
-  (evil-define-key 'visual 'global (kbd "gc") #'comment-dwim))
-
-(use-package evil-collection
-  :after evil
+;;; ---------- cua ----------
+(use-package cua-base
+  :ensure nil
   :custom
-  (evil-collection-want-unimpaired-p nil)
-  (evil-collection-key-blacklist '("SPC"))
-  :config (evil-collection-init))
-
-(use-package evil-surround
-  :after evil
-  :config (global-evil-surround-mode 1))
+  (cua-keep-region-after-copy t)
+  (cua-paste-pop-rotate-temporarily t)
+  (cua-auto-tabify-rectangles nil)
+  :config
+  (cua-mode 1)
+  (keymap-global-set "C-S-z" #'undo-redo))
 
 ;;; ---------- windows ----------
 (defun dot/window-toggle-maximize ()
@@ -134,40 +124,28 @@
     (set-frame-parameter nil 'dot-window-state (window-state-get (frame-root-window)))
     (delete-other-windows)))
 (keymap-global-set "M-o" #'other-window)
-(keymap-global-set "M-h" #'windmove-left)
-(keymap-global-set "M-j" #'windmove-down)
-(keymap-global-set "M-k" #'windmove-up)
-(keymap-global-set "M-l" #'windmove-right)
+(defvar-keymap dot-windmove-repeat-map
+  :repeat t
+  "<left>" #'windmove-left "<right>" #'windmove-right
+  "<up>" #'windmove-up "<down>" #'windmove-down)
 
-;;; ---------- leader ----------
-(require 'project)
-(defvar-keymap dot-leader-map
-  "SPC" #'execute-extended-command
-  ","   #'consult-buffer
-  "."   #'find-file
-  "/"   #'consult-ripgrep
-  "u"   #'universal-argument
-  "f f" #'find-file
+;;; ---------- C-c ----------
+(defvar-keymap dot-flymake-repeat-map
+  :repeat t
+  "n" #'flymake-goto-next-error "p" #'flymake-goto-prev-error)
+(defvar-keymap dot-hunk-repeat-map
+  :repeat t
+  "n" #'diff-hl-next-hunk "p" #'diff-hl-previous-hunk)
+(define-keymap :keymap mode-specific-map
   "f r" #'consult-recent-file
-  "f s" #'save-buffer
-  "f S" #'save-some-buffers
-  "f d" #'dired-jump
   "f i" (lambda () (interactive) (find-file user-init-file))
-  "b b" #'consult-buffer
-  "b d" #'kill-current-buffer
-  "b n" #'next-buffer
-  "b p" #'previous-buffer
-  "b r" #'revert-buffer-quick
   "b s" #'scratch-buffer
   "b u" #'vundo
-  "b k" #'kill-buffer-and-window
-  "TAB" #'mode-line-other-buffer
-  "p"   project-prefix-map
-  "w"   evil-window-map
-  "w u" #'winner-undo
-  "w U" #'winner-redo
   "w m" #'dot/window-toggle-maximize
-  "h"   help-map
+  "w <left>" #'windmove-left
+  "w <right>" #'windmove-right
+  "w <up>" #'windmove-up
+  "w <down>" #'windmove-down
   "g g" #'magit-status
   "g b" #'magit-blame-addition
   "g l" #'magit-log-current
@@ -175,17 +153,12 @@
   "g n" #'diff-hl-next-hunk
   "g p" #'diff-hl-previous-hunk
   "g r" #'diff-hl-revert-hunk
-  "s s" #'consult-line
   "s p" #'consult-ripgrep
-  "s i" #'consult-imenu
   "s o" #'consult-outline
   "s m" #'consult-mark
-  "s y" #'consult-yank-pop
   "l a" #'eglot-code-actions
   "l r" #'eglot-rename
   "l f" #'eglot-format
-  "l d" #'xref-find-definitions
-  "l R" #'xref-find-references
   "l i" #'eglot-find-implementation
   "l s" #'consult-eglot-symbols
   "l e" #'eglot
@@ -194,15 +167,12 @@
   "e p" #'flymake-goto-prev-error
   "e l" #'consult-flymake
   "e b" #'flymake-show-buffer-diagnostics
-  "c c" #'project-compile
-  "c r" #'recompile
+  "c"   #'recompile
   "o t" #'eat-project
   "o T" #'eat
-  "o d" #'dired
   "t t" #'modus-themes-toggle
   "t l" #'display-line-numbers-mode
   "t w" #'visual-line-mode
-  "t f" #'toggle-frame-fullscreen
   "t p" #'popper-toggle
   "t P" #'popper-cycle
   "a a" #'claude-code-ide-menu
@@ -212,20 +182,17 @@
   "a r" #'claude-code-ide-insert-at-mentioned
   "a C" #'claude-code-ide-continue
   "a R" #'claude-code-ide-resume
-  "a q" #'claude-code-ide-stop
-  "q q" #'save-buffers-kill-terminal
-  "q f" #'delete-frame)
-(evil-define-key '(normal visual) 'global (kbd "<leader>") dot-leader-map)
-(which-key-add-keymap-based-replacements dot-leader-map
-  "f" "file" "b" "buffer" "p" "project" "w" "window" "h" "help" "g" "git"
-  "s" "search" "l" "lsp" "e" "errors" "c" "compile" "o" "open" "t" "toggle"
-  "a" "ai" "q" "quit")
+  "a q" #'claude-code-ide-stop)
+(which-key-add-keymap-based-replacements mode-specific-map
+  "f" "file" "b" "buffer" "w" "window" "g" "git" "s" "search" "l" "lsp"
+  "e" "errors" "o" "open" "t" "toggle" "a" "ai")
 
 ;;; ---------- completion ----------
 (use-package vertico
   :custom (vertico-cycle t) (vertico-count 15)
-  :bind (:map vertico-map ("C-j" . vertico-next) ("C-k" . vertico-previous))
   :init (vertico-mode))
+
+(use-package vertico-mouse :ensure nil :after vertico :config (vertico-mouse-mode))
 
 (use-package orderless
   :custom
@@ -267,7 +234,6 @@
   (corfu-auto-prefix 2)
   (corfu-cycle t)
   (corfu-preselect 'prompt)
-  :bind (:map corfu-map ("C-j" . corfu-next) ("C-k" . corfu-previous))
   :init (global-corfu-mode)
   :config (corfu-popupinfo-mode))
 
@@ -336,7 +302,10 @@
 ;;; ---------- tools ----------
 (use-package eat
   :custom (eat-kill-buffer-on-exit t)
-  :hook (eshell-load . eat-eshell-mode))
+  :hook ((eshell-load . eat-eshell-mode)
+         (eat-mode . dot/eat-no-cua))
+  :init
+  (defun dot/eat-no-cua () (setq cua-inhibit-cua-keys t)))
 
 (use-package wgrep :custom (wgrep-auto-save-buffer t))
 
@@ -354,23 +323,29 @@
 
 (use-package minuet
   :hook (prog-mode . dot/minuet-on)
-  :bind (:map evil-insert-state-map ("M-i" . minuet-show-suggestion)
-              :map minuet-active-mode-map
-              ("TAB" . minuet-accept-suggestion)
-              ("M-a" . minuet-accept-suggestion-line)
-              ("M-y" . minuet-accept-suggestion)
-              ("M-e" . minuet-dismiss-suggestion)
-              ("M-n" . minuet-next-suggestion)
-              ("M-p" . minuet-previous-suggestion))
+  :commands (minuet-auto-suggestion-mode)
+  :bind (("M-i" . minuet-show-suggestion)
+         :map minuet-active-mode-map
+         ("TAB" . minuet-accept-suggestion)
+         ("M-a" . minuet-accept-suggestion-line)
+         ("M-y" . minuet-accept-suggestion)
+         ("M-e" . minuet-dismiss-suggestion)
+         ("M-n" . minuet-next-suggestion)
+         ("M-p" . minuet-previous-suggestion))
   :custom
   (minuet-provider 'openai-compatible)
   (minuet-n-completions 1)
   (minuet-request-timeout 5)
   (minuet-auto-suggestion-throttle-delay 1.5)
   (minuet-auto-suggestion-block-predicates
-   '(minuet-evil-not-insert-state-p dot/minuet-no-key-p dot/minuet-corfu-open-p dot/minuet-mid-line-p))
+   '(dot/minuet-not-typing-p dot/minuet-no-key-p dot/minuet-corfu-open-p dot/minuet-mid-line-p))
   :init
   (defconst dot/minuet-host "openrouter.ai")
+  (defun dot/minuet-not-typing-p ()
+    "Non-nil unless the last command inserted or deleted text."
+    (not (memq (or this-command last-command)
+               '(self-insert-command newline newline-and-indent electric-newline-and-maybe-indent
+                 delete-backward-char backward-delete-char-untabify corfu-insert))))
   (defun dot/minuet-no-key-p ()
     (not (auth-source-search :host dot/minuet-host :max 1)))
   (defun dot/minuet-key ()
@@ -386,7 +361,7 @@
     (minuet-auto-suggestion-mode)
     (when (and (not dot/minuet-told) (dot/minuet-no-key-p))
       (setq dot/minuet-told t)
-      (message "minuet: no OpenRouter API key yet; M-i in insert state asks for one")))
+      (message "minuet: no OpenRouter API key yet; M-i asks for one")))
   (defun dot/minuet-corfu-open-p () completion-in-region-mode)
   (defun dot/minuet-mid-line-p ()
     "Non-nil unless only closers electric-pair inserted, or whitespace, follow point."
@@ -451,6 +426,8 @@
           ns-right-option-modifier 'none
           ns-command-modifier 'super
           dired-use-ls-dired nil)
+  (keymap-global-set "s-q" #'save-buffers-kill-terminal)
+  (keymap-global-set "S-s-z" #'undo-redo)
   (use-package exec-path-from-shell
     :custom (exec-path-from-shell-variables '("PATH" "MANPATH" "SSH_AUTH_SOCK"))
     :config (exec-path-from-shell-initialize)))
