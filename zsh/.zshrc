@@ -22,7 +22,8 @@ _cached_eval() {
 # --- completion ---
 autoload -Uz compinit
 _zcompdump="$_zcache/zcompdump-$ZSH_VERSION"
-if [[ -n $_zcompdump(#qN.mh+24) ]]; then compinit -d "$_zcompdump"; else compinit -C -d "$_zcompdump"; fi
+if [[ -n $_zcompdump(#qN.mh+24) ]]; then compinit -d "$_zcompdump"; touch "$_zcompdump"; else compinit -C -d "$_zcompdump"; fi
+[[ $_zcompdump.zwc -nt $_zcompdump ]] || zcompile "$_zcompdump" 2>/dev/null
 if (( $+commands[dircolors] )); then _cached_eval dircolors dircolors -b
 elif (( $+commands[gdircolors] )); then _cached_eval dircolors gdircolors -b; fi
 
@@ -59,7 +60,7 @@ zstyle ':vcs_info:git:*' formats ' %F{blue}git:(%F{red}%b%F{blue})%f%m'
 zstyle ':vcs_info:git:*' actionformats ' %F{blue}git:(%F{red}%b|%a%F{blue})%f%m'
 zstyle ':vcs_info:git*+set-message:*' hooks git-dirty
 +vi-git-dirty() {
-  [[ -n $(git status --porcelain 2>/dev/null | head -c1) ]] && hook_com[misc]=' %F{yellow}✗%f'
+  [[ -n $(GIT_OPTIONAL_LOCKS=0 git status --porcelain 2>/dev/null | head -c1) ]] && hook_com[misc]=' %F{yellow}✗%f'
 }
 add-zsh-hook precmd vcs_info
 setopt PROMPT_SUBST

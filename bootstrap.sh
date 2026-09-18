@@ -41,7 +41,7 @@ case $OS in
   Darwin)
     xcode-select -p >/dev/null 2>&1 || { xcode-select --install; echo "finish the CLT install, then re-run"; exit 1; }
     BREW=/opt/homebrew/bin/brew; [ -x "$BREW" ] || BREW=/usr/local/bin/brew
-    [ -x "$BREW" ] || { installer=$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh); /bin/bash -c "$installer"; }
+    [ -x "$BREW" ] || { sudo -v; installer=$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh); NONINTERACTIVE=1 /bin/bash -c "$installer"; }
     eval "$("$BREW" shellenv)" ;;
   *) echo "unsupported OS: $OS"; exit 1 ;;
 esac
@@ -80,12 +80,15 @@ esac
 step "mise"
 export PATH="$BIN:$PATH"
 mise install --yes
+mise upgrade --yes
+mise prune --yes
 
 if [ -n "$RESTART_EMACS" ]; then
   step "emacs daemon restart (config changed)"
   case $OS in
     Linux)  systemctl --user restart emacs.service 2>/dev/null || echo "daemon not running; it picks the change up at next start" ;;
-    Darwin) brew services restart emacs-plus@30 2>/dev/null || echo "not the brew daemon; restart yours (emacs --daemon)" ;;
+    Darwin) launchctl kickstart -k "gui/$(id -u)/com.dotfiles.emacs" 2>/dev/null || brew services restart emacs-plus@30 2>/dev/null \
+              || echo "not a daemon this repo started; restart yours (emacs --daemon)" ;;
   esac
 fi
 
@@ -98,4 +101,5 @@ cat <<EOF
   3. $DEST/install.sh check
 EOF
 [ "$OS" = Linux ] && echo "  4. $DEST/kde/apply.sh   # if bootstrap ran outside a Plasma session"
+[ "$OS" = Darwin ] && echo "  4. Rectangle asks for Accessibility access once (System Settings > Privacy & Security); window keys need it"
 exit 0

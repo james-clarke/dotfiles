@@ -20,4 +20,7 @@ defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true
 defaults write com.apple.dock autohide -bool true
 defaults write com.apple.dock show-recents -bool false
 
+defaults write com.knollsoft.Rectangle alternateDefaultShortcuts -bool true
+defaults write com.knollsoft.Rectangle launchOnLogin -bool true
+
 killall Dock Finder 2>/dev/null || true

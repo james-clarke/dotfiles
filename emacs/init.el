@@ -124,6 +124,21 @@
   :after evil
   :config (global-evil-surround-mode 1))
 
+;;; ---------- windows ----------
+(defun dot/window-toggle-maximize ()
+  "Delete the other windows, or bring the layout back on the next call."
+  (interactive)
+  (if-let* ((state (frame-parameter nil 'dot-window-state)))
+      (progn (window-state-put state (frame-root-window))
+             (set-frame-parameter nil 'dot-window-state nil))
+    (set-frame-parameter nil 'dot-window-state (window-state-get (frame-root-window)))
+    (delete-other-windows)))
+(keymap-global-set "M-o" #'other-window)
+(keymap-global-set "M-h" #'windmove-left)
+(keymap-global-set "M-j" #'windmove-down)
+(keymap-global-set "M-k" #'windmove-up)
+(keymap-global-set "M-l" #'windmove-right)
+
 ;;; ---------- leader ----------
 (require 'project)
 (defvar-keymap dot-leader-map
@@ -145,8 +160,13 @@
   "b r" #'revert-buffer-quick
   "b s" #'scratch-buffer
   "b u" #'vundo
+  "b k" #'kill-buffer-and-window
+  "TAB" #'mode-line-other-buffer
   "p"   project-prefix-map
   "w"   evil-window-map
+  "w u" #'winner-undo
+  "w U" #'winner-redo
+  "w m" #'dot/window-toggle-maximize
   "h"   help-map
   "g g" #'magit-status
   "g b" #'magit-blame-addition
@@ -336,6 +356,7 @@
   :hook (prog-mode . dot/minuet-on)
   :bind (:map evil-insert-state-map ("M-i" . minuet-show-suggestion)
               :map minuet-active-mode-map
+              ("TAB" . minuet-accept-suggestion)
               ("M-a" . minuet-accept-suggestion-line)
               ("M-y" . minuet-accept-suggestion)
               ("M-e" . minuet-dismiss-suggestion)
@@ -344,6 +365,7 @@
   :custom
   (minuet-provider 'openai-compatible)
   (minuet-n-completions 1)
+  (minuet-request-timeout 5)
   (minuet-auto-suggestion-throttle-delay 1.5)
   (minuet-auto-suggestion-block-predicates
    '(minuet-evil-not-insert-state-p dot/minuet-no-key-p dot/minuet-corfu-open-p dot/minuet-mid-line-p))
@@ -366,7 +388,9 @@
       (setq dot/minuet-told t)
       (message "minuet: no OpenRouter API key yet; M-i in insert state asks for one")))
   (defun dot/minuet-corfu-open-p () completion-in-region-mode)
-  (defun dot/minuet-mid-line-p () (not (eolp)))
+  (defun dot/minuet-mid-line-p ()
+    "Non-nil unless only closers electric-pair inserted, or whitespace, follow point."
+    (not (looking-at-p "[])}>\"'`[:space:]]*$")))
   (defun dot/minuet-chat-tail ()
     "Last 60 lines of this project's Claude Code window, or nil when it is not open."
     (when-let* ((buf (and (fboundp 'claude-code-ide--get-buffer-name)

@@ -68,16 +68,16 @@ for f in .emacs .emacs.el .emacs.d; do
     keep)    echo "kept       $p  (the repo Emacs config will not load)" ;;
   esac
 done
-if [ "$(uname -s)" = Darwin ] && command -v brew >/dev/null && ! brew list --formula 2>/dev/null | grep -qx 'emacs-plus@30'; then
+if [ "$(uname -s)" = Darwin ] && command -v brew >/dev/null && ! brew list --cask 2>/dev/null | grep -qx emacs-app; then
   have=""
   [ -d /Applications/Emacs.app ] && have="/Applications/Emacs.app"
   for f in $(brew list --formula 2>/dev/null | grep -i '^emacs'); do have="$have brew:$f"; done
   for c in $(brew list --cask 2>/dev/null | grep -i '^emacs'); do have="$have cask:$c"; done
   if [ -n "$have" ]; then
-    case $(ask emacs/install "Emacs is already installed ($have); the repo installs emacs-plus@30 and runs it as a daemon" keep "keep replace") in
-      keep)    echo "kept       $have  (emacs-plus@30 skipped; run your own daemon: emacs --daemon)"
+    case $(ask emacs/install "Emacs is already installed ($have); the repo installs the prebuilt emacs-app cask (signed, native-comp, nothing to build) and runs it as a launchd daemon" keep "keep replace") in
+      keep)    echo "kept       $have  (emacs-app skipped; its daemon stays yours: brew services, or emacs --daemon)"
                command -v emacsclient >/dev/null || echo "warn       emacsclient is not on PATH; EDITOR, the e/eg aliases and git commit need it" ;;
-      replace) echo "replacing  os/macos.sh uninstalls the brew emacs formula, archives /Applications/Emacs.app and installs emacs-plus@30" ;;
+      replace) echo "replacing  os/macos.sh stops and uninstalls brew emacs formulae and casks, archives a foreign /Applications/Emacs.app and installs emacs-app" ;;
     esac
   fi
 fi

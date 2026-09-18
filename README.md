@@ -102,10 +102,9 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
    - Runs `preflight.sh` ([Existing machine](#existing-machine)): an Emacs you already have and a `~/.claude` setup are detected and you choose what happens to each; an existing `~/.gitconfig` is noted and left alone.
    - Runs `install.sh` (symlinks, archive of anything in the way, stale-link pruning).
    - Runs `os/macos.sh`:
-     - `brew bundle` against `os/Brewfile`: `emacs-plus@30` (native-comp, a source build), Ghostty, Claude Code, the Nerd Font;
-     - installs `mise` as a prebuilt binary into `~/.local/bin` (its Homebrew formula compiles Rust on any macOS without bottles); the CLI tools (`jq`, `fzf`, `eza`, `zoxide`, `ripgrep`, `fd`, `bat`, `delta`, `direnv`, `shellcheck`) come through mise from `config/mise/conf.d/macos.toml`, so a macOS release Homebrew no longer bottles for still installs in a minute. Homebrew copies of those same tools are uninstalled so `brew upgrade` never compiles them;
-     - copies `Emacs.app` to `/Applications` so Spotlight and the Dock can launch it;
-     - starts the Emacs daemon via `brew services` (a launchd agent); both Emacs steps are skipped if preflight kept an Emacs you already had;
+     - `brew bundle` against `os/Brewfile`: casks only, so nothing compiles on any macOS release: `emacs-app` (jimeh/emacs-builds: signed, notarized, native-comp, Emacs 31), Ghostty, Rectangle, Claude Code, the Nerd Font;
+     - installs `mise` as a prebuilt binary into `~/.local/bin` (its Homebrew formula compiles Rust on any macOS without bottles); the CLI tools (`jq`, `fzf`, `eza`, `zoxide`, `ripgrep`, `fd`, `bat`, `delta`, `direnv`, `shellcheck`) come through mise from `config/mise/conf.d/macos.toml`, so a macOS release Homebrew no longer bottles for still installs in a minute. Homebrew copies of those same tools are uninstalled so `brew upgrade` never compiles them, then `brew autoremove` drops the build dependencies nothing needs any more;
+     - installs a LaunchAgent (`com.dotfiles.emacs`) that runs `/Applications/Emacs.app` as `--fg-daemon` and keeps it alive; skipped if preflight kept an Emacs you already had;
      - makes `/bin/zsh` the login shell if it is not;
      - installs a LaunchAgent that swaps Caps Lock and Left Ctrl at every login (`hidutil`);
      - applies a curated set of `defaults write` (fast key repeat, no press-and-hold accents, no smart quotes, Finder shows extensions and hidden files, Dock autohide);
@@ -129,7 +128,7 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
 | `~/.zshenv` | not asked | the one file the repo must own (it sets `ZDOTDIR`); `install.sh` archives yours and links its own |
 | `~/.bashrc`, `~/.bash_profile` | keep (suggested) / archive | bash still uses them |
 | `~/.emacs`, `~/.emacs.el`, `~/.emacs.d` | archive (suggested) / keep | Emacs prefers these and ignores `~/.config/emacs` while they exist; keep means the repo config does not load |
-| An Emacs already installed (macOS: `/Applications/Emacs.app`, `brew` formula or cask) | keep (suggested) / replace | keep skips `emacs-plus@30` and the `brew services` daemon; you run `emacs --daemon` your way, and preflight warns if no `emacsclient` is on PATH. replace makes `os/macos.sh` uninstall a `brew` `emacs` formula, archive a foreign `/Applications/Emacs.app` and install `emacs-plus@30` |
+| An Emacs already installed (macOS: `/Applications/Emacs.app`, `brew` formula or cask) | keep (suggested) / replace | keep skips the `emacs-app` cask and the launchd daemon; your daemon stays yours (an `emacs-plus` `brew services` agent keeps running), and preflight warns if no `emacsclient` is on PATH. replace makes `os/macos.sh` stop and uninstall `brew` `emacs*` formulae and casks, archive a foreign `/Applications/Emacs.app` and install `emacs-app`. An `emacs-plus@30` you already built works fine either way; replace only buys you upgrades that download instead of rebuild |
 | `~/.gitconfig` | report only | git reads it after `~/.config/git/config`, so its identity, signing and helper settings override the repo defaults. Never touched |
 | `~/.claude/{CLAUDE.md,settings.json,statusline.sh,skills}` that are not repo links | keep (suggested) / replace | keep makes `install.sh` skip the whole `claude` group (`DOTFILES_SKIP=claude` does the same by hand). If your `settings.json` has a `hooks` block it says so; the repo copy has none |
 | `~/.nvm`, `~/.pyenv`, `~/.rbenv`, `~/.asdf` | report only | mise covers them; remove when ready |
@@ -229,9 +228,9 @@ Files that must not be symlinks (Plasma rewrites its rc files atomically, launch
 
 **One PATH story.** `~/.local/bin` first, then mise shims, then the system. Shells get it from `.zshenv`/`.zprofile`. GUI apps get it from the Plasma session env on Linux and from `exec-path-from-shell` on macOS. Emacs additionally prepends both directories to `exec-path` itself, so eglot finds `basedpyright` and `typescript-language-server` even when the daemon was started by systemd or launchd with a minimal environment.
 
-**Keyboard.** Caps Lock and Left Ctrl are swapped on both OSes (KDE `kxkbrc`, macOS `hidutil`); Escape in evil is `C-[`. Key repeat is fast on both. `Meta+E` (KDE) opens an Emacs frame, `Meta+Return` a terminal, `Meta+D` KRunner. On macOS, Option is Meta in Emacs and Ghostty; Command stays Command.
+**Keyboard.** Caps Lock and Left Ctrl are swapped on both OSes (KDE `kxkbrc`, macOS `hidutil`); Escape in evil is `C-[`. Key repeat is fast on both. `Meta+E` (KDE) opens an Emacs frame, `Meta+Return` a terminal, `Meta+D` KRunner; `Meta+H/J/K/L` focus the window in that direction, `Meta+Shift+H/J/K/L` tile it to that edge, `Meta+F` maximizes, `Meta+Shift+F` goes fullscreen, `Meta+Shift+Q` closes. On macOS, Option is Meta in Emacs and Ghostty; Command stays Command. Window tiling there comes from [Rectangle](https://rectangleapp.com) with its recommended keys: `Ctrl+Opt+←/→/↑/↓` halves, `Ctrl+Opt+U/I/J/K` quarters, `Ctrl+Opt+Return` maximize, `Ctrl+Opt+Delete` restore, `Ctrl+Opt+C` center, `Ctrl+Opt+Cmd+←/→` other display. It needs Accessibility access once, which it asks for on first launch.
 
-**Package managers own upgrades.** apt installs Emacs, Ghostty, Claude Code, mise and the CLI tools on Linux. Homebrew installs Emacs, Ghostty, Claude Code and the font on macOS; the CLI tools there come from mise as prebuilt binaries, because Homebrew stops bottling formulae for a macOS release after about three years and everything would compile from source. mise installs language toolchains, LSP servers and formatters on both. Emacs `package.el` installs Emacs packages (`package-vc` for the one that is not on an archive). Nothing is curl-piped except Homebrew's and mise's installers on macOS.
+**Package managers own upgrades.** apt installs Emacs, Ghostty, Claude Code, mise and the CLI tools on Linux. Homebrew installs Emacs, Ghostty, Claude Code, Rectangle and the font on macOS; the CLI tools there come from mise as prebuilt binaries, because Homebrew stops bottling formulae for a macOS release after about three years and everything would compile from source. mise installs language toolchains, LSP servers and formatters on both. Emacs `package.el` installs Emacs packages (`package-vc` for the one that is not on an archive). Nothing is curl-piped except Homebrew's and mise's installers on macOS.
 
 ---
 
@@ -241,11 +240,11 @@ Files that must not be symlinks (Plasma rewrites its rc files atomically, launch
 
 `early-init.el` raises the GC threshold and disables `file-name-handler-alist` during startup, then restores sane values; it also turns off the menu bar, tool bar and scroll bars before the first frame exists. `gcmh` manages GC after startup (collects when idle, not while you type).
 
-The daemon runs under `systemctl --user` (Linux; the unit ships with Debian's `emacs-common`, and if bootstrap ran over SSH before your first login it tells you to enable the unit after logging in) or `brew services` (macOS). Frames connect in about 100 ms; the first time you open a new language, `treesit-auto` asks to compile its grammar, a one-off pause. If the daemon dies, any `emacsclient` call restarts it because `ALTERNATE_EDITOR` is empty.
+The daemon runs under `systemctl --user` (Linux; the unit ships with Debian's `emacs-common`, and if bootstrap ran over SSH before your first login it tells you to enable the unit after logging in) or the `com.dotfiles.emacs` LaunchAgent (macOS). Frames connect in about 100 ms; the first time you open a new language, `treesit-auto` asks to compile its grammar, a one-off pause. If the daemon dies, any `emacsclient` call restarts it because `ALTERNATE_EDITOR` is empty.
 
 ```sh
 systemctl --user status emacs          # Linux
-brew services info emacs-plus@30       # macOS
+launchctl print gui/$(id -u)/com.dotfiles.emacs   # macOS
 emacsclient -e '(kill-emacs)'          # stop the daemon cleanly (either OS)
 ```
 
@@ -270,9 +269,10 @@ evil is vim. `C-u` scrolls up, `Y` yanks to end of line, undo is the built-in `u
 | `SPC .` | find file |
 | `SPC /` | ripgrep the project (consult) |
 | `SPC f f` / `f r` / `f s` / `f S` / `f d` / `f i` | find file / recent / save / save all / dired here / open init.el |
-| `SPC b b` / `b d` / `b n` / `b p` / `b r` / `b s` / `b u` | buffers / kill / next / prev / revert / scratch / undo tree (vundo) |
+| `SPC b b` / `b d` / `b k` / `b n` / `b p` / `b r` / `b s` / `b u` | buffers / kill / kill with its window / next / prev / revert / scratch / undo tree (vundo) |
+| `SPC TAB` | back to the previous buffer |
 | `SPC p …` | the whole `project-prefix-map`: `p f` find file, `p p` switch project, `p b` buffers, `p g` grep, `p c` compile, `p k` kill buffers |
-| `SPC w …` | `evil-window-map`: `w v` / `w s` split, `w h j k l` move, `w q` close, `w o` only |
+| `SPC w …` | `evil-window-map`: `w v` / `w s` split, `w h j k l` move, `w H J K L` swap, `w q` close, `w o` only, plus `w m` maximize toggle, `w u` / `w U` undo / redo the layout (winner) |
 | `SPC h …` | `help-map`: `h f` function, `h v` variable, `h k` key, `h m` mode |
 | `SPC g g` / `g b` / `g l` / `g f` | magit status / blame / log / file dispatch |
 | `SPC g n` / `g p` / `g r` | next hunk / previous hunk / revert hunk (diff-hl) |
@@ -286,7 +286,7 @@ evil is vim. `C-u` scrolls up, `Y` yanks to end of line, undo is the built-in `u
 | `SPC a s` / `a r` / `a C` / `a R` / `a q` | send a prompt / send the region / continue last session / resume a session / stop |
 | `SPC q q` / `q f` | quit Emacs / close frame |
 
-Non-leader: `C-s` consult-line, `C-.` embark-act, `C-;` embark-dwim, `C-x g` magit, `C-j` / `C-k` move in vertico and corfu popups, `<` narrows a consult list (e.g. `SPC ,` then `< b` for buffers only, `< f` for files), `TAB` completes or indents, `M-+` inserts a tempel snippet by name (they also show up in the corfu popup), `M-x` still works. Ghost text from minuet in insert state: `M-a` takes one line, `M-y` takes all of it, `M-e` dismisses, `M-n` / `M-p` cycle, `M-i` asks for a suggestion now ([Claude Code](#claude-code)). Popups (`*Messages*`, `*Warnings*`, help, compilation, flymake lists, plain `eat` terminals) open in a bottom window that `SPC t p` hides and brings back.
+Non-leader: `M-h/j/k/l` move between windows and `M-o` cycles them, in any state; `C-s` consult-line, `C-.` embark-act, `C-;` embark-dwim, `C-x g` magit, `C-j` / `C-k` move in vertico and corfu popups, `<` narrows a consult list (e.g. `SPC ,` then `< b` for buffers only, `< f` for files), `TAB` completes or indents, `M-+` inserts a tempel snippet by name (they also show up in the corfu popup), `M-x` still works. Ghost text from minuet in insert state: `TAB` takes all of it, `M-a` one line, `M-e` dismisses, `M-n` / `M-p` cycle, `M-i` asks for a suggestion now ([Claude Code](#claude-code)). Popups (`*Messages*`, `*Warnings*`, help, compilation, flymake lists, plain `eat` terminals) open in a bottom window that `SPC t p` hides and brings back.
 
 ### Languages
 
@@ -388,7 +388,7 @@ mise upgrade                 # bump everything
 - `kxkbrc`: `caps:swapctrl`;
 - `kcminputrc`: repeat delay 250 ms, rate 40/s;
 - `kdeglobals`: fixed-width font CommitMono Nerd Font 11;
-- `kglobalshortcutsrc`: `Meta+E` Emacs frame, `Meta+Return` terminal, `Meta+D` KRunner, `Meta+Shift+Q` close window, `Meta+H/J/K/L` focus window left/down/up/right.
+- `kglobalshortcutsrc`: `Meta+E` Emacs frame, `Meta+Return` terminal, `Meta+D` KRunner, `Meta+Shift+Q` close window, `Meta+H/J/K/L` focus window left/down/up/right, `Meta+Shift+H/J/K/L` quick-tile it there (Plasma's `Meta+arrows` still work), `Meta+F` maximize, `Meta+Shift+F` fullscreen.
 
 Plasma 6 removed the "Custom Shortcuts" module; launching a command from a shortcut now requires a `.desktop` file (`kde/dotfiles-emacs.desktop`, hidden from menus) and a `kglobalshortcutsrc` entry keyed by its file name. `kglobalaccel` does not reliably reload; the script restarts it, and a logout applies everything for certain.
 
@@ -401,12 +401,12 @@ Plasma 6 removed the "Custom Shortcuts" module; launching a command from a short
 ## macOS specifics
 
 - **Homebrew** lives in `/opt/homebrew` (Apple Silicon) or `/usr/local` (Intel); `.zprofile` detects which. `HOMEBREW_NO_ANALYTICS=1` is set globally.
-- **Emacs** is `emacs-plus@30` with native compilation (the formula's default). `Emacs.app` is copied to `/Applications` because Spotlight does not index symlinks into the Homebrew cellar. The daemon is a `brew services` launchd agent running `emacs --fg-daemon`.
+- **Emacs** is the `emacs-app` cask from [jimeh/emacs-builds](https://github.com/jimeh/emacs-builds): a signed, notarized `/Applications/Emacs.app` with native compilation, currently Emacs 31, for macOS 11 and later on both architectures. No source build, so a macOS release Homebrew has stopped bottling for (Sonoma today) installs in the time it takes to download, and `brew upgrade --cask emacs-app` is a download too. The cask links `emacs` and `emacsclient` into Homebrew's `bin`. The daemon is the `com.dotfiles.emacs` LaunchAgent running `Emacs --fg-daemon` with `KeepAlive`, so it comes back if it dies. `emacs-plus` is the alternative when you want its patches, at the price of compiling Emacs and libgccjit.
 - **Modifiers in Emacs**: left Option is Meta, right Option is left alone for special characters, Command is Super. Command shortcuts you expect from macOS (`⌘C`, `⌘V`, `⌘Z`) are not bound; use evil.
 - **Caps Lock ↔ Left Ctrl** uses `hidutil` in a LaunchAgent (`com.dotfiles.capslock`), re-applied at each login because the mapping does not persist across reboots.
 - **`defaults`** applied by `os/macos/defaults.sh`; edit the list before running if you disagree with any. Dock and Finder restart automatically; keyboard settings apply after logout.
 - **SSH** uses the Keychain for the key passphrase (`UseKeychain yes`).
-- **No tiling manager** is installed. Sequoia's built-in tiling (`Fn+Control+arrows`) covers halves; add AeroSpace or Rectangle to the Brewfile if you want more.
+- **Rectangle** does window tiling with its recommended `Ctrl+Opt` keys ([Keyboard](#keyboard)); it needs Accessibility access once. AeroSpace is the i3-style alternative, but its default `alt` modifier collides with Meta in Emacs.
 - **Claude Code** is the `claude-code` Homebrew cask, so `brew upgrade` updates it.
 
 ---
@@ -432,9 +432,9 @@ One posture: Claude reads, researches, debugs, reviews and plans. You write the 
 
 `minuet` puts multi-line ghost text under the cursor, from Gemini Flash-Lite routed through OpenRouter: a chat model, chosen because the "stay silent unless certain" rule below is an instruction, and pure fill-in-the-middle endpoints (Codestral, a local Ollama) cannot take one. OpenRouter because it is one prepaid key for any model and no Google Cloud billing to fight; at Flash-Lite prices a day of typing costs a few cents. Another model is one string in `init.el` (`:model` in `minuet-openai-compatible-options`); another provider is `minuet-provider` plus its options plist, and minuet also speaks Gemini, OpenAI, Codestral, DeepSeek, Ollama and the Anthropic API directly. It is built to stay out of the way:
 
-- It only fires in insert state, at the end of a line, when corfu's popup is not up, at most every 1.5 seconds. LSP completion always has right of way; minuet gets the quiet spots, after a `(`, a `=`, a `:` or a newline.
+- It only fires in insert state, at the end of a line (closing brackets and quotes that electric-pair put there do not count), when corfu's popup is not up, at most every 1.5 seconds. LSP completion always has right of way; minuet gets the quiet spots, after a `(`, a `=`, a `:` or a newline.
 - The prompt tells the model to return nothing unless the surrounding code and the conversation make the next code certain. No overlay appears for an empty answer, so a bad guess costs nothing but the request.
-- One candidate, never a menu. `M-a` accepts a line, and that is the habit worth keeping; `M-y` accepts the whole block; `M-e` dismisses; typing on dismisses too. `M-i` asks for a suggestion on demand.
+- One candidate, never a menu. `TAB` accepts the whole block while it is showing (TAB is back to indent/complete the moment it is gone); `M-a` accepts a line, and that is the habit worth keeping; `M-e` dismisses; typing on dismisses too. `M-i` asks for a suggestion on demand. Requests get five seconds before they are dropped.
 - The bridge to the session: when a Claude window is open for the project, the last 60 lines of it go into the completion prompt, so what you and Claude just agreed on shapes the suggestion. No file is written anywhere for this. If it turns out noisy, drop `dot/minuet-chat-tail` from `dot/minuet-prompt` in `init.el`.
 - Too chatty overall: remove the `prog-mode` hook and keep `M-i`. That is on-demand mode, and some people prefer it.
 
@@ -453,12 +453,12 @@ The API key comes from `auth-source`: the first `M-i` asks for it and offers to 
 | What | Command |
 |---|---|
 | Everything system-level, Linux | `sudo apt update && sudo apt upgrade` (Emacs, Ghostty stays pinned, Claude Code, CLI tools) |
-| Everything system-level, macOS | `brew update && brew upgrade && brew bundle --file=~/dev/dotfiles/os/Brewfile`; CLI tools ride `mise upgrade`; `mise self-update` for mise itself |
+| Everything system-level, macOS | `dots` does it all (below); by hand: `brew update && brew upgrade && brew bundle --file=~/Developer/dotfiles/os/Brewfile`, CLI tools `mise upgrade`, `mise self-update` for mise itself |
 | Ghostty on Linux | bump `GHOSTTY_TAG` in `os/linux.sh`, remove the package, re-run `os/linux.sh` |
 | Emacs packages | `M-x package-upgrade-all`, then `M-x package-autoremove`; `M-x package-vc-upgrade` for `claude-code-ide` |
 | Toolchains and LSP servers | `mise upgrade` |
 | zsh plugins | `git -C ~/dev/dotfiles submodule update --remote` |
-| The dotfiles themselves, after pushing from another machine | `dots` (alias for `bootstrap.sh`; the curl line from the install section does the same). It pulls, re-links, installs new packages and tools, and restarts the Emacs daemon only when `emacs/` changed. Open a new terminal afterwards. Stops with a message if the clone has local changes or has diverged |
+| The dotfiles themselves, after pushing from another machine | `dots` (alias for `bootstrap.sh`; the curl line from the install section does the same). It pulls, re-links, installs new packages (`brew bundle` also upgrades what it lists), runs `mise install`, `mise upgrade` and `mise prune`, and restarts the Emacs daemon only when `emacs/` changed. Open a new terminal afterwards. Stops with a message if the clone has local changes or has diverged |
 | KDE settings after editing `kde/apply.sh` | re-run it, log out and in |
 | macOS defaults after editing | re-run `os/macos/defaults.sh` |
 
@@ -471,7 +471,7 @@ Re-running `bootstrap.sh` is always safe; it pulls the repo, every step checks b
 `.github/workflows/ci.yml` runs on every push:
 
 - **Linux job** in a `debian:trixie` container (the exact target): installs every package in `os/apt-packages.txt` (a wrong name fails here, not on your new box), `shellcheck` on every script, `zsh -n` on every zsh file, `jq` on `settings.json`, `git config` parse, `preflight.sh` without a tty against a fake `~/.emacs.d` and `~/.gitconfig` (both must survive), then `install.sh` twice into a fresh `HOME` with a file in the way (archive path, then the stale-link path), `install.sh check`, an interactive zsh start that must print nothing, and finally Emacs 30 loads `early-init.el` + `init.el` in batch mode, installing every package from the real archives and cloning `claude-code-ide` (ELPA cache keyed on `init.el`), and byte-compiles both files.
-- **macOS job**: `brew bundle` against the real `os/Brewfile` with `emacs-plus@30` (a source build) and the casks skipped, so every formula and tap name resolves; then shellcheck, `zsh -n`, `plutil -lint` on the LaunchAgent, the same preflight and double `install.sh`, interactive zsh start, and the same Emacs batch load and byte-compile with Homebrew's `emacs` formula, so the `darwin` branch of `init.el` runs for real.
+- **macOS job**: `brew bundle` against the real `os/Brewfile` with the casks skipped, so every tap and cask name resolves; `mise latest` on every tool in both mise configs, so a wrong short name fails here; then shellcheck, `zsh -n`, `plutil -lint` on the LaunchAgent, the same preflight and double `install.sh`, interactive zsh start, and the same Emacs batch load and byte-compile with Homebrew's `emacs` formula, so the `darwin` branch of `init.el` runs for real.
 
 Not covered: `bootstrap.sh` end to end (needs a GitHub login), `os/linux.sh`, `os/macos.sh`, `kde/apply.sh`, and anything that needs a display.
 
@@ -496,7 +496,7 @@ Locally: `~/dev/dotfiles/install.sh check` after anything that might have replac
 
 **`compinit: insecure directories` on macOS.** `os/macos.sh` fixes permissions; re-run it, or `compaudit | xargs chmod g-w,o-w`.
 
-**`emacsclient: can't find socket`.** The daemon is not running and `ALTERNATE_EDITOR` is not empty in this environment. `systemctl --user restart emacs` (Linux) or `brew services restart emacs-plus@30` (macOS), or just `emacsclient -a '' -c`. If bootstrap ran over SSH before your first graphical login, the unit was never enabled: `systemctl --user enable --now emacs.service`.
+**`emacsclient: can't find socket`.** The daemon is not running and `ALTERNATE_EDITOR` is not empty in this environment. `systemctl --user restart emacs` (Linux) or `launchctl kickstart -k gui/$(id -u)/com.dotfiles.emacs` (macOS), or just `emacsclient -a '' -c`. If bootstrap ran over SSH before your first graphical login, the unit was never enabled: `systemctl --user enable --now emacs.service`.
 
 **Emacs ignores the repo config.** A `~/.emacs`, `~/.emacs.el` or `~/.emacs.d` exists; Emacs loads that and never looks at `~/.config/emacs`. Re-run `preflight.sh` and archive it, or move it yourself.
 

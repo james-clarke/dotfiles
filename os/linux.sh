@@ -10,6 +10,7 @@ GHOSTTY_SHA256_arm64=73f384e62c419d7a7809d686bf579fea5e23f52742b34f70c74d6adf0e7
 NERD_FONTS_TAG=v3.5.1
 CLAUDE_KEY_FPR=31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE
 step() { printf '\n\033[1;34m== %s\033[0m\n' "$*"; }
+tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 
 step "apt"
 sudo apt-get update -q
@@ -31,7 +32,6 @@ fi
 step "font"
 FONTS="$HOME/.local/share/fonts/CommitMonoNerdFont"
 if [ ! -d "$FONTS" ]; then
-  tmp=$(mktemp -d)
   curl -fsSL -o "$tmp/font.zip" "https://github.com/ryanoasis/nerd-fonts/releases/download/$NERD_FONTS_TAG/CommitMono.zip"
   mkdir -p "$FONTS"
   unzip -q -o "$tmp/font.zip" -d "$FONTS" -x LICENSE README.md
@@ -44,7 +44,6 @@ if ! command -v ghostty >/dev/null; then
   arch=$(dpkg --print-architecture)
   deb="ghostty_${GHOSTTY_TAG%-*}.${GHOSTTY_TAG##*-}_${arch}_${codename}.deb"
   sum="GHOSTTY_SHA256_$arch"
-  tmp=$(mktemp -d)
   if [ "$codename" = trixie ] && [ -n "${!sum:-}" ] \
      && curl -fsSL -o "$tmp/$deb" "https://github.com/mkasberg/ghostty-ubuntu/releases/download/$GHOSTTY_TAG/$deb"; then
     echo "${!sum}  $tmp/$deb" | sha256sum -c --quiet || { echo "ghostty checksum mismatch"; exit 1; }
@@ -78,4 +77,4 @@ else
 fi
 
 step "login shell"
-[ "$(getent passwd "$USER" | cut -d: -f7)" = /usr/bin/zsh ] || chsh -s /usr/bin/zsh
+[ "$(getent passwd "$(id -un)" | cut -d: -f7)" = /usr/bin/zsh ] || chsh -s /usr/bin/zsh

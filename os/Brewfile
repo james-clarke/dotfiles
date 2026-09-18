@@ -1,7 +1,7 @@
-tap "d12frosted/emacs-plus"
+tap "jimeh/emacs-builds"
 
-brew "emacs-plus@30"
-
+cask "emacs-app"
 cask "ghostty"
+cask "rectangle"
 cask "claude-code"
 cask "font-commit-mono-nerd-font"
