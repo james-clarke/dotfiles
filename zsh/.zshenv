@@ -8,6 +8,9 @@ export XDG_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}"
 typeset -U path
 path=("$HOME/.local/bin" $path)
 
+# Projects live here; bootstrap.sh clones the dotfiles into $DEV_DIR/dotfiles.
+[[ $OSTYPE == darwin* ]] && export DEV_DIR="${DEV_DIR:-$HOME/Developer}" || export DEV_DIR="${DEV_DIR:-$HOME/dev}"
+
 export EDITOR='emacsclient -t' VISUAL='emacsclient -t' ALTERNATE_EDITOR=''
 export PAGER=less LESSHISTFILE="$XDG_STATE_HOME/less/history"
 export npm_config_cache="$XDG_CACHE_HOME/npm" npm_config_userconfig="$XDG_CONFIG_HOME/npm/npmrc"

@@ -83,13 +83,14 @@ alias ls='eza --group-directories-first --icons=auto'
 alias la='eza -a --icons=auto'
 alias cp='cp -iv' rm='rm -iv' mkdir='mkdir -pv' df='df -h'
 alias e='emacsclient -t' eg='emacsclient -c -n'
+alias dots="$DEV_DIR/dotfiles/bootstrap.sh"
 export MANPAGER="sh -c 'col -bx | bat -l man -p'" MANROFFOPT='-c'
 
 # --- widgets ---
-# proj: jump into any ~/dev project (ctrl-x ctrl-p); feeds zoxide on landing
+# proj: jump into any $DEV_DIR project (ctrl-x ctrl-p); feeds zoxide on landing
 proj() {
   local dir
-  dir=$(fd . ~/dev -t d -d 2 | fzf --preview 'eza -la --icons=auto --color=always {}') || return
+  dir=$(fd . "$DEV_DIR" -t d -d 2 | fzf --preview 'eza -la --icons=auto --color=always {}') || return
   cd "$dir" && zoxide add "$dir"
 }
 bindkey -s '^X^P' 'proj\n'

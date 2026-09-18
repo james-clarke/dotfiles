@@ -65,7 +65,7 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
    ```
    What it does, in order:
    - Checks git, your identity and SSH access to GitHub, then `apt install curl` if needed.
-   - Clones this repo over SSH with submodules to `~/dev/dotfiles` (override with `DOTFILES_DIR`); on a re-run it pulls instead.
+   - Clones this repo over SSH with submodules to `~/dev/dotfiles` (override with `DOTFILES_DIR`); on a re-run it pulls instead and refuses to touch a clone with local changes.
    - Runs `preflight.sh`: on a machine that already has shell files, an Emacs config or a Claude Code setup, asks what to keep ([Existing machine](#existing-machine)). A fresh box sails through.
    - Runs `install.sh`: symlinks every config file into place, moving anything that already exists into `~/.local/state/dotfiles/archive/<timestamp>/`, and removes links from earlier runs whose entry has since left the table (recorded in `~/.local/state/dotfiles/links`).
    - Runs `os/linux.sh`:
@@ -98,7 +98,7 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
    - Checks git, your identity and SSH access to GitHub.
    - Installs Xcode Command Line Tools if missing (the script exits and asks you to re-run once the installer finishes).
    - Installs Homebrew if missing.
-   - Clones the repo over SSH with submodules to `~/dev/dotfiles`.
+   - Clones the repo over SSH with submodules to `~/Developer/dotfiles` (Finder gives that folder its own icon; `DEV_DIR` or `DOTFILES_DIR` override). A clone already sitting in `~/dev` is moved there on the next run. The rest of this README writes `~/dev/dotfiles`; read `~/Developer/dotfiles` on macOS.
    - Runs `preflight.sh` ([Existing machine](#existing-machine)): an Emacs you already have and a `~/.claude` setup are detected and you choose what happens to each; an existing `~/.gitconfig` is noted and left alone.
    - Runs `install.sh` (symlinks, archive of anything in the way, stale-link pruning).
    - Runs `os/macos.sh`:
@@ -324,7 +324,7 @@ Keys and widgets:
 |---|---|
 | `Ctrl+R` / `Ctrl+T` / `Alt+C` | fzf history / file / directory |
 | `Alt+Z` | `cdi`: interactive zoxide jump |
-| `Ctrl+X Ctrl+P` | `proj`: fuzzy-pick a project under `~/dev`, cd, feed zoxide |
+| `Ctrl+X Ctrl+P` | `proj`: fuzzy-pick a project under `$DEV_DIR` (`~/dev`, `~/Developer` on macOS), cd, feed zoxide |
 | `Ctrl+X Ctrl+G` | live ripgrep across the tree with preview; Enter opens the hit at that line in Emacs |
 | `Alt+←` / `Alt+→` / `Alt+B` / `Alt+F` | word motion (all common terminal escape sequences bound) |
 
@@ -458,7 +458,7 @@ The API key comes from `auth-source`: the first `M-i` asks for it and offers to 
 | Emacs packages | `M-x package-upgrade-all`, then `M-x package-autoremove`; `M-x package-vc-upgrade` for `claude-code-ide` |
 | Toolchains and LSP servers | `mise upgrade` |
 | zsh plugins | `git -C ~/dev/dotfiles submodule update --remote` |
-| The dotfiles themselves | `git -C ~/dev/dotfiles pull && ~/dev/dotfiles/install.sh check` |
+| The dotfiles themselves, after pushing from another machine | `dots` (alias for `bootstrap.sh`; the curl line from the install section does the same). It pulls, re-links, installs new packages and tools, and restarts the Emacs daemon only when `emacs/` changed. Open a new terminal afterwards. Stops with a message if the clone has local changes or has diverged |
 | KDE settings after editing `kde/apply.sh` | re-run it, log out and in |
 | macOS defaults after editing | re-run `os/macos/defaults.sh` |
 

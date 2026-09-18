@@ -6,9 +6,11 @@
 set -euo pipefail
 
 REPO_URL=${DOTFILES_REPO:-git@github.com:james-clarke/dotfiles}
-DEST=${DOTFILES_DIR:-$HOME/dev/dotfiles}
-BIN="$HOME/.local/bin"
 OS=$(uname -s)
+case $OS in Darwin) DEV=${DEV_DIR:-$HOME/Developer} ;; *) DEV=${DEV_DIR:-$HOME/dev} ;; esac
+DEST=${DOTFILES_DIR:-$DEV/dotfiles}
+BIN="$HOME/.local/bin"
+RESTART_EMACS=""
 
 step() { printf '\n\033[1;34m== %s\033[0m\n' "$*"; }
 
@@ -45,9 +47,20 @@ case $OS in
 esac
 
 step "clone"
+if [ "$DEV" != "$HOME/dev" ] && [ -f "$HOME/dev/dotfiles/install.sh" ] && [ ! -e "$DEST" ]; then
+  rmdir "$DEV" 2>/dev/null || true
+  [ -e "$DEV" ] && { echo "both $HOME/dev and $DEV exist; merge them by hand, then re-run"; exit 1; }
+  mv "$HOME/dev" "$DEV"
+  echo "moved      $HOME/dev -> $DEV  (install.sh re-points every symlink)"
+  RESTART_EMACS=1
+fi
 if [ -f "$DEST/install.sh" ]; then
-  git -C "$DEST" pull -q --ff-only
+  [ -z "$(git -C "$DEST" status --porcelain)" ] || { echo "$DEST has local changes; commit or stash them, then re-run"; exit 1; }
+  OLD=$(git -C "$DEST" rev-parse HEAD)
+  git -C "$DEST" pull -q --ff-only || { echo "$DEST has diverged from origin; reconcile it (git -C $DEST pull --rebase), then re-run"; exit 1; }
   git -C "$DEST" submodule update --init -q
+  git -C "$DEST" diff --quiet "$OLD" HEAD -- emacs || RESTART_EMACS=1
+  echo "updated    $DEST  $(git -C "$DEST" log --oneline "$OLD..HEAD" | wc -l | tr -d ' ') new commit(s)"
 else
   mkdir -p "$(dirname "$DEST")"
   git clone -q --recurse-submodules "$REPO_URL" "$DEST"
@@ -68,8 +81,17 @@ step "mise"
 export PATH="$BIN:$PATH"
 mise install --yes
 
+if [ -n "$RESTART_EMACS" ]; then
+  step "emacs daemon restart (config changed)"
+  case $OS in
+    Linux)  systemctl --user restart emacs.service 2>/dev/null || echo "daemon not running; it picks the change up at next start" ;;
+    Darwin) brew services restart emacs-plus@30 2>/dev/null || echo "not the brew daemon; restart yours (emacs --daemon)" ;;
+  esac
+fi
+
 step "done — manual tail"
 cat <<EOF
+  0. open a new terminal (or: exec zsh) for shell changes
   1. log out / in  (login shell, session env, keyboard remap)
   2. claude        # log in, then:
      jq -r '.enabledPlugins | keys[]' $DEST/claude/settings.json | xargs -n1 claude plugin install
