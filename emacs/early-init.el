@@ -16,9 +16,7 @@
       frame-inhibit-implied-resize t
       window-resize-pixelwise t
       inhibit-startup-screen t
-      inhibit-startup-echo-area-message user-login-name
       initial-scratch-message nil
-      load-prefer-newer t
-      native-comp-async-report-warnings-errors 'silent)
+      load-prefer-newer t)
 
 ;;; early-init.el ends here

@@ -15,5 +15,9 @@
   <true/>
   <key>ProcessType</key>
   <string>Interactive</string>
+  <key>StandardOutPath</key>
+  <string>/tmp/com.dotfiles.emacs.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/com.dotfiles.emacs.log</string>
 </dict>
 </plist>

@@ -19,7 +19,10 @@ brew cleanup -q --prune=all >/dev/null 2>&1 || true
 step "emacs daemon"
 LA="$HOME/Library/LaunchAgents/com.dotfiles.emacs.plist"
 mkdir -p "$(dirname "$LA")"
-cp "$REPO/os/macos/emacs.plist" "$LA"
+if ! cmp -s "$REPO/os/macos/emacs.plist" "$LA"; then
+  cp "$REPO/os/macos/emacs.plist" "$LA"
+  launchctl bootout "gui/$UID_/com.dotfiles.emacs" 2>/dev/null || true
+fi
 launchctl print "gui/$UID_/com.dotfiles.emacs" >/dev/null 2>&1 \
   || launchctl bootstrap "gui/$UID_" "$LA" \
   || echo "emacs agent not loaded now (no GUI session?); it loads at next login"

@@ -3,4 +3,5 @@ Type=Application
 Name=Emacs (dotfiles)
 Exec=emacsclient -c -a ""
 Icon=emacs
+StartupWMClass=emacs
 NoDisplay=true

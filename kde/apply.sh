@@ -35,7 +35,7 @@ set_key kglobalshortcutsrc kwin 'Window Quick Tile Right'    'Meta+Shift+Right,M
 set_key kglobalshortcutsrc kwin 'Window Maximize'            $'Meta+F\tMeta+PgUp,Meta+PgUp,Maximize Window'
 set_key kglobalshortcutsrc kwin 'Window Fullscreen'          'Meta+Shift+F,,Make Window Fullscreen'
 
-command -v kbuildsycoca6 >/dev/null && kbuildsycoca6 >/dev/null 2>&1 || true
-command -v qdbus6 >/dev/null && qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || true
+! command -v kbuildsycoca6 >/dev/null || kbuildsycoca6 >/dev/null 2>&1 || true
+! command -v qdbus6 >/dev/null || qdbus6 org.kde.KWin /KWin reconfigure >/dev/null 2>&1 || true
 systemctl --user restart plasma-kglobalaccel.service 2>/dev/null || true
 echo "applied. Keyboard options and shortcuts fully apply on next login."

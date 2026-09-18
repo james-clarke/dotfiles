@@ -44,10 +44,14 @@ if [ "$have" != "$want" ]; then
   codename=$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release)
   arch=$(dpkg --print-architecture)
   deb="ghostty_${want}_${arch}_${codename}.deb"
-  sum="GHOSTTY_SHA256_$arch"
-  if [ "$codename" = trixie ] && [ -n "${!sum:-}" ] \
+  case $arch in
+    amd64) sum=$GHOSTTY_SHA256_amd64 ;;
+    arm64) sum=$GHOSTTY_SHA256_arm64 ;;
+    *) sum= ;;
+  esac
+  if [ "$codename" = trixie ] && [ -n "$sum" ] \
      && curl -fsSL -o "$tmp/$deb" "https://github.com/mkasberg/ghostty-ubuntu/releases/download/$GHOSTTY_TAG/$deb"; then
-    echo "${!sum}  $tmp/$deb" | sha256sum -c --quiet || { echo "ghostty checksum mismatch"; exit 1; }
+    echo "$sum  $tmp/$deb" | sha256sum -c --quiet || { echo "ghostty checksum mismatch"; exit 1; }
     sudo apt-get install -y -q "$tmp/$deb"
   else
     echo "no verified ghostty build for $codename/$arch; konsole stays the terminal"
