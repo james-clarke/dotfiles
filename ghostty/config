@@ -21,8 +21,8 @@ keybind = ctrl+shift+n=new_window
 keybind = ctrl+shift+w=close_surface
 keybind = ctrl+shift+enter=new_split:right
 keybind = ctrl+shift+backspace=new_split:down
-keybind = ctrl+shift+h=goto_split:left
-keybind = ctrl+shift+j=goto_split:down
-keybind = ctrl+shift+k=goto_split:up
-keybind = ctrl+shift+l=goto_split:right
+keybind = ctrl+shift+left=goto_split:left
+keybind = ctrl+shift+down=goto_split:down
+keybind = ctrl+shift+up=goto_split:up
+keybind = ctrl+shift+right=goto_split:right
 keybind = ctrl+shift+f=toggle_fullscreen
