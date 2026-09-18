@@ -361,7 +361,7 @@ To add a tool for every machine: apt name into `os/apt-packages.txt`, formula in
 
 `kde/apply.sh` writes only the keys this repo owns, via `kwriteconfig6`, and leaves the rest of Plasma's config alone:
 
-- `kxkbrc`: `caps:swapctrl`;
+- `kxkbrc`: `ctrl:swapcaps`;
 - `kcminputrc`: repeat delay 250 ms, rate 40/s;
 - `kdeglobals`: fixed-width font CommitMono Nerd Font 11;
 - `kglobalshortcutsrc`: `Meta+E` Emacs frame, `Meta+Return` terminal, `Meta+D` KRunner, `Meta+Shift+Q` close window, `Meta+Arrows` focus the window in that direction, `Meta+Shift+Arrows` quick-tile it there (Plasma's default `Meta+Shift+Left/Right`, move to the previous or next screen, is unset so the tile keys win), `Meta+F` maximize, `Meta+Shift+F` fullscreen.

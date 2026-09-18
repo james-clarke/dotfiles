@@ -75,4 +75,4 @@ if ! command -v claude >/dev/null; then
 fi
 
 step "login shell"
-[ "$(getent passwd "$(id -un)" | cut -d: -f7)" = /usr/bin/zsh ] || chsh -s /usr/bin/zsh
+[ "$(getent passwd "$(id -un)" | cut -d: -f7)" = /usr/bin/zsh ] || sudo chsh -s /usr/bin/zsh "$(id -un)"
