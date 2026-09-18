@@ -33,7 +33,6 @@ launchctl bootstrap "gui/$UID_" "$LA" || echo "capslock agent not loaded now (no
 
 step "defaults"
 "$REPO/os/macos/defaults.sh"
-pgrep -xq Rectangle || open -ga Rectangle || true
 
 step "ssh keychain"
 SSHCFG="$HOME/.ssh/config"

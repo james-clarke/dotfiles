@@ -94,5 +94,4 @@ cat <<EOF
   3. $DEST/install.sh check
 EOF
 [ "$OS" = Linux ] && echo "  4. $DEST/kde/apply.sh   # if bootstrap ran outside a Plasma session"
-[ "$OS" = Darwin ] && echo "  4. Rectangle asks for Accessibility access once (System Settings > Privacy & Security); window keys need it"
 exit 0
