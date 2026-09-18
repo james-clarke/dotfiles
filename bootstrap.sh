@@ -9,7 +9,6 @@ REPO_URL=${DOTFILES_REPO:-git@github.com:james-clarke/dotfiles}
 OS=$(uname -s)
 case $OS in Darwin) DEV=${DEV_DIR:-$HOME/Developer} ;; *) DEV=${DEV_DIR:-$HOME/dev} ;; esac
 DEST=${DOTFILES_DIR:-$DEV/dotfiles}
-BIN="$HOME/.local/bin"
 RESTART_EMACS=""
 
 step() { printf '\n\033[1;34m== %s\033[0m\n' "$*"; }
@@ -76,12 +75,6 @@ case $OS in
   Linux)  "$DEST/os/linux.sh" ;;
   Darwin) "$DEST/os/macos.sh" ;;
 esac
-
-step "mise"
-export PATH="$BIN:$PATH"
-mise install --yes
-mise upgrade --yes
-mise prune --yes
 
 if [ -n "$RESTART_EMACS" ]; then
   step "emacs daemon restart (config changed)"

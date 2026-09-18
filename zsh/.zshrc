@@ -73,7 +73,6 @@ bindkey '^[[1;3D' backward-word; bindkey '^[^[[D' backward-word; bindkey '^[b' b
 # --- tools (each optional; Ctrl-R/Ctrl-T/Alt-C from fzf) ---
 _cached_eval fzf fzf --zsh
 _cached_eval zoxide zoxide init zsh --cmd cd
-_cached_eval mise mise activate zsh
 _cached_eval direnv direnv hook zsh
 bindkey -s '\ez' 'cdi\n'
 

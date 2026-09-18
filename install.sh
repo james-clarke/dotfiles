@@ -21,7 +21,6 @@ LINKS=(
   "claude/skills:$HOME/.claude/skills"
   "config/git/config:$HOME/.config/git/config"
   "config/git/ignore:$HOME/.config/git/ignore"
-  "config/mise/config.toml:$HOME/.config/mise/config.toml"
   "emacs/early-init.el:$HOME/.config/emacs/early-init.el"
   "emacs/init.el:$HOME/.config/emacs/init.el"
   "emacs/templates:$HOME/.config/emacs/templates"
@@ -34,7 +33,6 @@ case $(uname -s) in
     "kde/env.sh:$HOME/.config/plasma-workspace/env/dotfiles.sh"
     "kde/dotfiles-emacs.desktop:$HOME/.local/share/applications/dotfiles-emacs.desktop"
   ) ;;
-  Darwin) LINKS+=("config/mise/conf.d/macos.toml:$HOME/.config/mise/conf.d/macos.toml") ;;
 esac
 
 skipped() {

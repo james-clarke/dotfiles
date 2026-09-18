@@ -1,9 +1,0 @@
-[tools]
-node = "lts"
-uv = "latest"
-shfmt = "latest"
-"npm:basedpyright" = "latest"
-"npm:typescript-language-server" = "latest"
-"npm:typescript" = "latest"
-"npm:prettier" = "latest"
-ruff = "latest"

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Debian 13 + KDE packages, Emacs daemon, Ghostty, Claude Code, fonts. Idempotent. Called by bootstrap.sh.
 set -euo pipefail
 
 REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
@@ -11,23 +10,23 @@ NERD_FONTS_TAG=v3.5.1
 CLAUDE_KEY_FPR=31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE
 step() { printf '\n\033[1;34m== %s\033[0m\n' "$*"; }
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+sudo -v
 
 step "apt"
 sudo apt-get update -q
 xargs -a "$REPO/os/apt-packages.txt" sudo apt-get install -y -q
-case ${XDG_SESSION_TYPE:-} in wayland) EMACS=emacs-pgtk ;; *) EMACS=emacs-gtk ;; esac
-sudo apt-get install -y -q "$EMACS"
+sudo apt-get upgrade -y -q
 mkdir -p "$BIN"
 ln -sfn /usr/bin/batcat "$BIN/bat"
 ln -sfn /usr/bin/fdfind "$BIN/fd"
 
-step "mise (apt via extrepo; updates ride apt upgrade)"
-if ! command -v mise >/dev/null; then
-  sudo apt-get install -y -q extrepo
-  sudo extrepo enable mise
-  sudo apt-get update -q
-  sudo apt-get install -y -q mise
-fi
+step "uv and npm tools"
+export PATH="$BIN:$PATH" npm_config_prefix="$HOME/.local"
+command -v uv >/dev/null || pipx install uv
+pipx upgrade-all
+while read -r t; do uv tool install "$t"; done < "$REPO/os/uv-tools.txt"
+uv tool upgrade --all
+xargs -a "$REPO/os/npm-packages.txt" npm install -g
 
 step "font"
 FONTS="$HOME/.local/share/fonts/CommitMonoNerdFont"
@@ -39,10 +38,12 @@ if [ ! -d "$FONTS" ]; then
 fi
 
 step "ghostty"
-if ! command -v ghostty >/dev/null; then
+want="${GHOSTTY_TAG%-*}.${GHOSTTY_TAG##*-}"
+have=$(dpkg-query -W -f='${Version}' ghostty 2>/dev/null || true)
+if [ "$have" != "$want" ]; then
   codename=$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release)
   arch=$(dpkg --print-architecture)
-  deb="ghostty_${GHOSTTY_TAG%-*}.${GHOSTTY_TAG##*-}_${arch}_${codename}.deb"
+  deb="ghostty_${want}_${arch}_${codename}.deb"
   sum="GHOSTTY_SHA256_$arch"
   if [ "$codename" = trixie ] && [ -n "${!sum:-}" ] \
      && curl -fsSL -o "$tmp/$deb" "https://github.com/mkasberg/ghostty-ubuntu/releases/download/$GHOSTTY_TAG/$deb"; then
@@ -57,7 +58,7 @@ step "emacs daemon"
 systemctl --user enable --now emacs.service \
   || echo "no user session (ssh / before first login); after login run: systemctl --user enable --now emacs.service"
 
-step "claude code (apt; updates ride apt upgrade)"
+step "claude code"
 if ! command -v claude >/dev/null; then
   sudo install -d -m 0755 /etc/apt/keyrings
   sudo curl -fsSL https://downloads.claude.ai/keys/claude-code.asc -o /etc/apt/keyrings/claude-code.asc

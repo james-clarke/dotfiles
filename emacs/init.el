@@ -16,7 +16,7 @@
 (load custom-file 'noerror 'nomessage)
 
 ;;; ---------- path (daemon/launchd never see the shell PATH) ----------
-(dolist (dir '("~/.local/share/mise/shims" "~/.local/bin"))
+(dolist (dir '("~/.local/bin"))
   (let ((d (expand-file-name dir)))
     (when (file-directory-p d)
       (add-to-list 'exec-path d)

@@ -12,7 +12,14 @@ jobs:
           submodules: true
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: every package in os/apt-packages.txt exists on trixie
-        run: xargs -a os/apt-packages.txt apt-get install -y -q && apt-get install -y -q emacs-nox
+        run: xargs -a os/apt-packages.txt apt-get install -y -q
+      - name: every uv tool and npm package resolves and lands in ~/.local/bin
+        run: |
+          export HOME=/tmp/ci-home PATH=/tmp/ci-home/.local/bin:$PATH npm_config_prefix=/tmp/ci-home/.local
+          pipx install uv
+          while read -r t; do uv tool install "$t"; done < os/uv-tools.txt
+          xargs -a os/npm-packages.txt npm install -g
+          for b in uv ruff basedpyright tsc typescript-language-server prettier; do command -v "$b"; done
       - run: shellcheck bootstrap.sh install.sh preflight.sh os/*.sh os/macos/*.sh claude/statusline.sh kde/*.sh
       - run: zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/home.zshenv
       - run: jq empty claude/settings.json && git config -f config/git/config -l >/dev/null
@@ -53,14 +60,10 @@ jobs:
         run: |
           export HOMEBREW_NO_AUTO_UPDATE=1
           HOMEBREW_BUNDLE_CASK_SKIP=$(brew bundle list --file os/Brewfile --cask | tr '\n' ' ') brew bundle --file os/Brewfile
-      - run: brew install -q emacs shellcheck
+      - run: brew install -q emacs
       - run: shellcheck bootstrap.sh install.sh preflight.sh os/*.sh os/macos/*.sh claude/statusline.sh kde/*.sh
       - run: zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/home.zshenv
       - run: plutil -lint os/macos/*.plist
-      - name: every tool in both mise configs resolves
-        run: |
-          curl -fsSL https://mise.run | MISE_INSTALL_PATH="$RUNNER_TEMP/mise" sh
-          for t in $(sed -n 's/^"\{0,1\}\([^" ]*\)"\{0,1\} = .*/\1/p' config/mise/config.toml config/mise/conf.d/macos.toml); do "$RUNNER_TEMP/mise" latest "$t"; done
       - name: preflight without a tty keeps what it finds
         run: |
           export HOME="$RUNNER_TEMP/ci-home"; mkdir -p "$HOME/.emacs.d"
