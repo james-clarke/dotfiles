@@ -12,7 +12,9 @@
                   file-name-handler-alist dot--file-name-handler-alist)))
 
 (setq package-enable-at-startup nil
+      frame-resize-pixelwise t
       frame-inhibit-implied-resize t
+      window-resize-pixelwise t
       inhibit-startup-screen t
       inhibit-startup-echo-area-message user-login-name
       initial-scratch-message nil

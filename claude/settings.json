@@ -2,6 +2,7 @@
   "env": {
     "CAVEMAN_DEFAULT_MODE": "lite"
   },
+  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
       "Bash(git status*)",
@@ -73,7 +74,6 @@
     }
   },
   "language": "English",
-  "includeCoAuthoredBy": false,
   "spinnerTipsEnabled": false,
   "effortLevel": "high",
   "promptSuggestionEnabled": false,
