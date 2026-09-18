@@ -114,4 +114,3 @@ zle -N fzf-rg-widget
 bindkey '^X^G' fzf-rg-widget
 
 source "$ZDOTDIR/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-eval "$(/Users/james/.local/bin/mise activate zsh)"
