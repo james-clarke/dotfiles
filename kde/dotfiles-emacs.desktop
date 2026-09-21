@@ -1,7 +1,8 @@
 [Desktop Entry]
 Type=Application
 Name=Emacs (dotfiles)
-Exec=emacsclient -c -a ""
+Exec=emacsclient -c -a "" %F
+MimeType=text/plain;
 Icon=emacs
 StartupWMClass=emacs
 NoDisplay=true

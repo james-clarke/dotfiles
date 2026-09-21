@@ -17,11 +17,12 @@ set_key kcminputrc Keyboard RepeatRate 40
 set_key kdeglobals General fixed 'CommitMono Nerd Font,11,-1,5,400,0,0,0,0,0,0,0,0,0,0,1'
 
 term=org.kde.konsole.desktop
+xdg-mime default dotfiles-emacs.desktop text/plain
 command -v ghostty >/dev/null && term=com.mitchellh.ghostty.desktop
 set_key kglobalshortcutsrc "services/$term" _launch 'Meta+Return'
 set_key kglobalshortcutsrc services/dotfiles-emacs.desktop _launch 'Meta+E'
 set_key kglobalshortcutsrc services/org.kde.krunner.desktop _launch 'Meta+D'
-
+set_key kglobalshortcutsrc kwin 'Show Desktop' 'none,Meta+D,Peek at Desktop'
 set_key kglobalshortcutsrc kwin 'Window Close' 'Meta+Shift+Q,Alt+F4,Close Window'
 set_key kglobalshortcutsrc kwin 'Window to Previous Screen' 'none,Meta+Shift+Left,Move Window to Previous Screen'
 set_key kglobalshortcutsrc kwin 'Window to Next Screen' 'none,Meta+Shift+Right,Move Window to Next Screen'

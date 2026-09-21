@@ -6,8 +6,12 @@ UID_=$(id -u)
 step() { printf '\n\033[1;34m== %s\033[0m\n' "$*"; }
 
 step "homebrew"
-BREW=/opt/homebrew/bin/brew; [ -x "$BREW" ] || BREW=/usr/local/bin/brew
-[ -x "$BREW" ] || { echo "homebrew missing; run bootstrap.sh first"; exit 1; }
+BREW=/opt/homebrew/bin/brew
+[ -x "$BREW" ] || BREW=/usr/local/bin/brew
+[ -x "$BREW" ] || {
+	echo "homebrew missing; run bootstrap.sh first"
+	exit 1
+}
 eval "$("$BREW" shellenv)"
 export HOMEBREW_NO_ANALYTICS=1
 brew update -q
@@ -20,12 +24,12 @@ step "emacs daemon"
 LA="$HOME/Library/LaunchAgents/com.dotfiles.emacs.plist"
 mkdir -p "$(dirname "$LA")"
 if ! cmp -s "$REPO/os/macos/emacs.plist" "$LA"; then
-  cp "$REPO/os/macos/emacs.plist" "$LA"
-  launchctl bootout "gui/$UID_/com.dotfiles.emacs" 2>/dev/null || true
+	cp "$REPO/os/macos/emacs.plist" "$LA"
+	launchctl bootout "gui/$UID_/com.dotfiles.emacs" 2>/dev/null || true
 fi
-launchctl print "gui/$UID_/com.dotfiles.emacs" >/dev/null 2>&1 \
-  || launchctl bootstrap "gui/$UID_" "$LA" \
-  || echo "emacs agent not loaded now (no GUI session?); it loads at next login"
+launchctl print "gui/$UID_/com.dotfiles.emacs" >/dev/null 2>&1 ||
+	launchctl bootstrap "gui/$UID_" "$LA" ||
+	echo "emacs agent not loaded now (no GUI session?); it loads at next login"
 
 step "keyboard: swap caps lock and left ctrl"
 LA="$HOME/Library/LaunchAgents/com.dotfiles.capslock.plist"
@@ -37,7 +41,7 @@ launchctl bootstrap "gui/$UID_" "$LA" || echo "capslock agent not loaded now (no
 step "ssh keychain"
 SSHCFG="$HOME/.ssh/config"
 mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
-grep -qs 'UseKeychain' "$SSHCFG" || printf 'Host *\n\tAddKeysToAgent yes\n\tUseKeychain yes\n' >> "$SSHCFG"
+grep -qs 'UseKeychain' "$SSHCFG" || printf 'Host *\n\tAddKeysToAgent yes\n\tUseKeychain yes\n' >>"$SSHCFG"
 
 step "login shell"
 [ "$(dscl . -read "$HOME" UserShell | awk '{print $2}')" = /bin/zsh ] || chsh -s /bin/zsh
