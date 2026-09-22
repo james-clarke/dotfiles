@@ -67,7 +67,7 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
    - links every config file into place ([Where things land](#where-things-land)); anything already there is renamed `<file>.bak`;
    - runs `os/linux.sh`:
      - `apt-get update`, installs everything in `os/apt-packages.txt` (including `emacs-pgtk`, `nodejs`, `npm`, `pipx`, `shfmt`), then `apt-get upgrade`;
-     - `pipx install uv`, then `uv tool install` for `os/uv-tools.txt` (`ruff`, `basedpyright`) and `npm install -g` for `os/npm-packages.txt` (`typescript`, `typescript-language-server`, `prettier`), all under `~/.local`, no sudo;
+     - `pipx install uv`, then `uv tool install` for `os/uv-tools.txt` (`ruff`, `basedpyright`, `djlint`) and `npm install -g` for `os/npm-packages.txt` (`typescript`, `typescript-language-server`, `prettier`), all under `~/.local`, no sudo;
      - downloads CommitMono Nerd Font into `~/.local/share/fonts` and refreshes the font cache;
      - installs Ghostty from the community `.deb` build (pinned version and SHA-256) or leaves Konsole in place if no build exists for your Debian codename;
      - enables the Emacs daemon as a systemd user service;
@@ -93,7 +93,7 @@ Package counts stay small on purpose. Emacs pulls two dozen packages (plus their
    It checks git, your identity and SSH access to GitHub, installs Xcode Command Line Tools if missing (the script exits and asks you to re-run once the installer finishes), installs Homebrew if missing, clones the repo over SSH with submodules to `~/Developer/dotfiles` (Finder gives that folder its own icon; `DEV_DIR` or `DOTFILES_DIR` override; the rest of this README writes `~/dev/dotfiles`), and hands off to `bin/dots`. What `dots` does, in order:
    - links every config file into place; anything already there is renamed `<file>.bak`;
    - runs `os/macos.sh`:
-     - `brew update`, `brew bundle` against `os/Brewfile`, `brew upgrade`, `brew autoremove`, `brew cleanup`. Formulas: `git`, `node`, `uv`, `ruff`, `shfmt`, `basedpyright`, `typescript-language-server`, `typescript`, `prettier`, `jq`, `fzf`, `eza`, `zoxide`, `ripgrep`, `fd`, `bat`, `git-delta`, `direnv`, `shellcheck`. Casks: `emacs-app` (jimeh/emacs-builds: signed, notarized, native-comp, Emacs 31), Ghostty, Claude Code, the Nerd Font;
+     - `brew update`, `brew bundle` against `os/Brewfile`, `brew upgrade`, `brew autoremove`, `brew cleanup`. Formulas: `git`, `node`, `uv`, `ruff`, `shfmt`, `basedpyright`, `typescript-language-server`, `typescript`, `prettier`, `djlint`, `jq`, `fzf`, `eza`, `zoxide`, `ripgrep`, `fd`, `bat`, `git-delta`, `direnv`, `shellcheck`. Casks: `emacs-app` (jimeh/emacs-builds: signed, notarized, native-comp, Emacs 31), Ghostty, Claude Code, the Nerd Font;
      - installs a LaunchAgent (`com.dotfiles.emacs`) that runs `/Applications/Emacs.app` as `--fg-daemon` and keeps it alive;
      - installs a LaunchAgent that swaps Caps Lock and Left Ctrl at every login (`hidutil`);
      - adds `AddKeysToAgent` / `UseKeychain` to `~/.ssh/config`;

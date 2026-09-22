@@ -141,6 +141,7 @@
   :repeat t
   "n" #'diff-hl-next-hunk "p" #'diff-hl-previous-hunk)
 (define-keymap :keymap mode-specific-map
+  "f f" #'apheleia-format-buffer
   "f r" #'consult-recent-file
   "f i" (lambda () (interactive) (find-file user-init-file))
   "b s" #'scratch-buffer
@@ -288,12 +289,28 @@
   (eglot-send-changes-idle-time 1))
 
 (use-package treesit-auto
-  :custom (treesit-auto-install 'prompt)
+  :custom
+  (treesit-auto-install t)
+  (treesit-auto-langs '(python javascript typescript tsx css json html bash yaml toml dockerfile markdown))
   :config
   (treesit-auto-add-to-auto-mode-alist 'all)
   (global-treesit-auto-mode))
 
-(use-package apheleia :config (apheleia-global-mode))
+(use-package web-mode
+  :mode "\\.html\\'"
+  :custom
+  (web-mode-engines-alist '(("django" . "\\.html\\'")))
+  (web-mode-markup-indent-offset 2)
+  (web-mode-css-indent-offset 2)
+  (web-mode-code-indent-offset 2)
+  (web-mode-enable-auto-closing t))
+
+(use-package apheleia
+  :config
+  (push '(djlint . ("djlint" "-" "--reformat" "--profile=django")) apheleia-formatters)
+  (setf (alist-get 'python-ts-mode apheleia-mode-alist) '(ruff-isort ruff))
+  (setf (alist-get 'web-mode apheleia-mode-alist) 'djlint))
+
 (use-package envrc :config (envrc-global-mode))
 
 (use-package markdown-mode
