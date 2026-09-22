@@ -11,6 +11,10 @@
                   gc-cons-percentage 0.1
                   file-name-handler-alist dot--file-name-handler-alist)))
 
+(setq-default bidi-paragraph-direction 'left-to-right
+              bidi-inhibit-bpa t)
+(setq inhibit-compacting-font-caches t)
+
 (setq package-enable-at-startup nil
       frame-resize-pixelwise t
       frame-inhibit-implied-resize t

@@ -39,6 +39,11 @@
   (scroll-conservatively 101)
   (scroll-margin 4)
   (read-process-output-max (* 4 1024 1024))
+  (jit-lock-defer-time 0.05)
+  (process-adaptive-read-buffering nil)
+  (fast-but-imprecise-scrolling t)
+  (redisplay-skip-fontification-on-input t)
+  (eldoc-idle-delay 1)
   (enable-recursive-minibuffers t)
   (read-extended-command-predicate #'command-completion-default-include-p)
   (minibuffer-prompt-properties '(read-only t cursor-intangible t face minibuffer-prompt))
@@ -88,7 +93,6 @@
     (add-hook h #'display-line-numbers-mode)
     (add-hook h #'hl-line-mode))
   (add-hook 'prog-mode-hook #'subword-mode)
-  (add-hook 'emacs-lisp-mode-hook #'flymake-mode)
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
   (keymap-set minibuffer-mode-map "<escape>" #'abort-minibuffers)
   (unless noninteractive
@@ -265,6 +269,13 @@
   (popper-echo-mode))
 
 ;;; ---------- languages ----------
+(use-package flymake
+  :ensure nil
+  :hook (emacs-lisp-mode . flymake-mode)
+  :config
+  (dolist (f '(flymake-error flymake-warning flymake-note))
+    (set-face-attribute f nil :underline nil)))
+
 (use-package eglot
   :ensure nil
   :hook ((python-base-mode js-base-mode typescript-ts-base-mode rust-ts-mode go-ts-mode
@@ -272,7 +283,9 @@
   :custom
   (eglot-autoshutdown t)
   (eglot-events-buffer-config '(:size 0))
-  (eglot-extend-to-xref t))
+  (eglot-extend-to-xref t)
+  (eglot-ignored-server-capabilities '(:documentHighlightProvider :inlayHintProvider))
+  (eglot-send-changes-idle-time 1))
 
 (use-package treesit-auto
   :custom (treesit-auto-install 'prompt)
@@ -285,7 +298,12 @@
 
 (use-package markdown-mode
   :mode ("\\.md\\'" . gfm-mode)
-  :custom (markdown-fontify-code-blocks-natively t))
+  :custom (markdown-fontify-code-blocks-natively t)
+  ;; setting bold/italic slows down editor, remove them
+  :config
+  (setq markdown-mode-font-lock-keywords
+        (cl-remove-if (lambda (k) (memq (car-safe k) '(markdown-match-bold markdown-match-italic)))
+                      markdown-mode-font-lock-keywords)))
 
 ;;; ---------- git ----------
 (use-package magit
