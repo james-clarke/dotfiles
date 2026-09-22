@@ -19,4 +19,9 @@
       initial-scratch-message nil
       load-prefer-newer t)
 
+(push '(tool-bar-lines . 0) default-frame-alist)
+(push '(vertical-scroll-bars) default-frame-alist)
+(setq tool-bar-mode nil
+      scroll-bar-mode nil)
+
 ;;; early-init.el ends here

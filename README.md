@@ -40,7 +40,7 @@ Nothing here is tied to a person or an employer. Fork it, change one URL, and it
 | LSP | eglot (built-in) + treesit (built-in) | No lsp-mode, no UI sprawl; servers come from apt, Homebrew, `uv tool` and `npm -g` |
 | Git in Emacs | magit, diff-hl | The reason to use Emacs |
 | Formatting | apheleia | Async format-on-save, cursor stays put |
-| Terminal in Emacs | eat | Pure elisp, no C module to compile |
+| Terminal in Emacs | ghostel | Downloaded binary, no compilation needed, better CC support |
 | Shell | zsh, no framework | `~/.zshenv` stub + `~/.config/zsh/`; plugins as git submodules; cached tool init |
 | Terminal | Ghostty | One config file for KDE and macOS; GPU fast; Meta passes through cleanly |
 | Toolchains | apt / Homebrew; `uv tool` and `npm -g` under `~/.local` on Debian for what apt lacks | No version manager, no shims; upgrades ride the package manager |
@@ -223,7 +223,7 @@ emacsclient -e '(kill-emacs)'          # stop the daemon cleanly (either OS)
 
 Built-in and used: `use-package`, `cua-base`, `eglot`, `treesit`, `which-key`, `editorconfig`, `project`, `flymake`, `ediff`, `repeat-mode`, `pixel-scroll-precision-mode`, `context-menu-mode`, `tab-bar`, `tab-line`, `windmove`, `winner`, `modus-themes`, `savehist`, `recentf`, `save-place`, `dired`, `so-long`, `xterm-mouse-mode`.
 
-Installed from ELPA/MELPA: `gcmh`, `vertico` (with its bundled `vertico-mouse`), `orderless`, `marginalia`, `consult`, `consult-eglot`, `embark`, `embark-consult`, `corfu`, `corfu-terminal`, `cape`, `tempel`, `vundo`, `hl-todo`, `popper`, `treesit-auto`, `apheleia`, `envrc`, `markdown-mode`, `magit`, `diff-hl`, `eat`, `minuet`, `wgrep`, `mood-line`, `ligature`, and on macOS only `exec-path-from-shell`. `claude-code-ide` is not on any archive; `use-package :vc` clones it from GitHub through `package-vc` on first start (`M-x package-vc-upgrade` to update it).
+Installed from ELPA/MELPA: `gcmh`, `vertico` (with its bundled `vertico-mouse`), `orderless`, `marginalia`, `consult`, `consult-eglot`, `embark`, `embark-consult`, `corfu`, `corfu-terminal`, `cape`, `tempel`, `vundo`, `hl-todo`, `popper`, `treesit-auto`, `apheleia`, `envrc`, `markdown-mode`, `magit`, `diff-hl`, `ghostel`, `web-server`, `minuet`, `wgrep`, `mood-line`, `ligature`, and on macOS only `exec-path-from-shell`. `claude-code-ide` is not on any archive; `use-package :vc` clones it from GitHub through `package-vc` on first start (`M-x package-vc-upgrade` to update it).
 
 Archives are prioritised GNU > NonGNU > MELPA, so a package available on GNU ELPA never comes from MELPA. `custom.el` (written by Emacs, holds `package-selected-packages`) lives in `~/.config/emacs/`, outside the repo.
 
@@ -250,9 +250,9 @@ Stock Emacs keys plus `cua-mode`: with a region active, `C-c` copies, `C-x` cuts
 | `C-c a c` / `a a` / `a t` | Claude Code in this project: start / transient menu / show or hide its window |
 | `C-c a s` / `a r` / `a C` / `a R` / `a q` | send a prompt / send the region / continue last session / resume a session / stop |
 
-Other bindings: `C-s` consult-line, `C-.` embark-act, `C-;` embark-dwim, `<` narrows a consult list (`C-x b` then `< b` for buffers only, `< f` for files), `TAB` completes or indents, `M-+` inserts a tempel snippet by name (they also show up in the corfu popup). vertico and corfu take `C-n` / `C-p` and the arrow keys. Ghost text from minuet: `TAB` takes all of it, `M-a` one line, `M-e` dismisses, `M-n` / `M-p` cycle, `M-i` asks for a suggestion now ([Claude Code](#claude-code)). Popups (`*Messages*`, `*Warnings*`, help, compilation, flymake lists, plain `eat` terminals) open in a bottom window that `C-c t p` hides and brings back.
+Other bindings: `C-s` consult-line, `C-.` embark-act, `C-;` embark-dwim, `<` narrows a consult list (`C-x b` then `< b` for buffers only, `< f` for files), `TAB` completes or indents, `M-+` inserts a tempel snippet by name (they also show up in the corfu popup). vertico and corfu take `C-n` / `C-p` and the arrow keys. Ghost text from minuet: `TAB` takes all of it, `M-a` one line, `M-e` dismisses, `M-n` / `M-p` cycle, `M-i` asks for a suggestion now ([Claude Code](#claude-code)). Popups (`*Messages*`, `*Warnings*`, help, compilation, flymake lists, plain `ghostel` terminals) open in a bottom window that `C-c t p` hides and brings back.
 
-In `eat` terminals, including the Claude Code window, cua is off so `C-c` interrupts and `C-v` pastes an image into Claude the way the program expects; copy from a terminal with `M-w` or the right-click menu. The `C-c <letter>` groups still work there.
+In `ghostel` terminals, including the Claude Code window, cua is off so `C-c` interrupts and `C-v` pastes an image into Claude the way the program expects; copy from a terminal with `M-w` or the right-click menu. The `C-c <letter>` groups still work there.
 
 ### Mouse
 
@@ -402,7 +402,7 @@ One posture: Claude reads, researches, debugs, reviews and plans. You write the 
 
 ### Inside Emacs
 
-`claude-code-ide.el` runs the real Claude Code TUI in an `eat` window, so every plugin, skill and the statusline work unchanged, and it registers Emacs as Claude's IDE over MCP: Claude sees the current buffer and selection and can read flymake diagnostics, xref, imenu and project info. `C-c a c` starts it for the current project, `C-c a r` sends the region into the prompt, `C-c a s` sends a typed prompt, `C-c a t` hides and shows the window, `C-c a C` / `a R` continue or resume a session, `C-c a a` opens the transient menu with everything else. Outside Emacs, `claude` in Ghostty is the same thing minus the buffer awareness.
+`claude-code-ide.el` runs the real Claude Code TUI in an `ghostel` window, so every plugin, skill and the statusline work unchanged, and it registers Emacs as Claude's IDE over MCP: Claude sees the current buffer and selection and can read flymake diagnostics, xref, imenu and project info. `C-c a c` starts it for the current project, `C-c a r` sends the region into the prompt, `C-c a s` sends a typed prompt, `C-c a t` hides and shows the window, `C-c a C` / `a R` continue or resume a session, `C-c a a` opens the transient menu with everything else. Outside Emacs, `claude` in Ghostty is the same thing minus the buffer awareness.
 
 ### Completion: minuet
 

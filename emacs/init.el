@@ -64,8 +64,8 @@
   (dired-mouse-drag-files t)
   (tab-bar-show 1)
   (tab-line-new-button-show nil)
-  (tab-line-exclude-modes '(completion-list-mode eat-mode help-mode compilation-mode
-                            flymake-diagnostics-buffer-mode messages-buffer-mode))
+  (tab-line-exclude-modes '(completion-list-mode ghostel-mode help-mode compilation-mode
+                                                 flymake-diagnostics-buffer-mode messages-buffer-mode))
   :config
   (global-auto-revert-mode)
   (savehist-mode)
@@ -168,8 +168,8 @@
   "e l" #'consult-flymake
   "e b" #'flymake-show-buffer-diagnostics
   "c"   #'recompile
-  "o t" #'eat-project
-  "o T" #'eat
+  "o t" #'ghostel-project
+  "o T" #'ghostel
   "t t" #'modus-themes-toggle
   "t l" #'display-line-numbers-mode
   "t w" #'visual-line-mode
@@ -258,7 +258,7 @@
 (use-package popper
   :custom
   (popper-reference-buffers
-   '("\\*Messages\\*" "\\*Warnings\\*" "Output\\*$" "\\*eat\\*" "\\*Async Shell Command\\*"
+   '("\\*Messages\\*" "\\*Warnings\\*" "Output\\*$" "\\*ghostel\\*" "\\*Async Shell Command\\*"
      help-mode compilation-mode flymake-diagnostics-buffer-mode))
   :init
   (popper-mode)
@@ -300,13 +300,6 @@
   :config (diff-hl-flydiff-mode))
 
 ;;; ---------- tools ----------
-(use-package eat
-  :custom (eat-kill-buffer-on-exit t)
-  :hook ((eshell-load . eat-eshell-mode)
-         (eat-mode . dot/eat-no-cua))
-  :init
-  (defun dot/eat-no-cua () (setq cua-inhibit-cua-keys t)))
-
 (use-package wgrep :custom (wgrep-auto-save-buffer t))
 
 ;;; ---------- ai: claude code inside emacs ----------
@@ -316,9 +309,24 @@
   (ediff-window-setup-function #'ediff-setup-windows-plain)
   (ediff-split-window-function #'split-window-horizontally))
 
+;; better term for claude code ide
+(use-package ghostel
+  :custom
+  (ghostel-module-auto-install 'download)
+  (ghostel-module-directory "~/.config/emacs/ghostel/")
+  :hook ((eshell-load . ghostel-eshell-visual-command-mode)
+         (ghostel-mode . dot/term-no-cua))
+  :init
+  (defun dot/term-no-cua () (setq cua-inhibit-cua-keys t)))
+
+;; pinning web server to fix non-melpa issue
+(use-package web-server :pin melpa)
 (use-package claude-code-ide
   :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
-  :custom (claude-code-ide-terminal-backend 'eat)
+  :custom
+  (claude-code-ide-terminal-backend 'ghostel)
+  (claude-code-ide-use-side-window nil)
+
   :config (claude-code-ide-emacs-tools-setup))
 
 (use-package minuet
@@ -345,7 +353,7 @@
     "Non-nil unless the last command inserted or deleted text."
     (not (memq (or this-command last-command)
                '(self-insert-command newline newline-and-indent electric-newline-and-maybe-indent
-                 delete-backward-char backward-delete-char-untabify corfu-insert))))
+                                     delete-backward-char backward-delete-char-untabify corfu-insert))))
   (defun dot/minuet-no-key-p ()
     (not (auth-source-search :host dot/minuet-host :max 1)))
   (defun dot/minuet-key ()
@@ -416,7 +424,9 @@
   "Set the default font on FRAME when it is graphical and the font exists."
   (when (and (display-graphic-p frame)
              (find-font (font-spec :family "CommitMono Nerd Font") frame))
-    (set-face-attribute 'default frame :family "CommitMono Nerd Font" :height 110)))
+    (set-face-attribute 'default frame :family "CommitMono Nerd Font" :height 120)
+    (set-face-attribute 'fixed-pitch frame :family "CommitMono Nerd Font")
+    (set-face-attribute 'fixed-pitch-serif frame :family "CommitMono Nerd Font")))
 (add-hook 'after-make-frame-functions #'dot/apply-font)
 (dot/apply-font)
 

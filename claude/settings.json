@@ -102,7 +102,7 @@
   "effortLevel": "high",
   "promptSuggestionEnabled": false,
   "awaySummaryEnabled": false,
-  "tui": "fullscreen",
+  "tui": "default",
   "prefersReducedMotion": true,
   "skipWorkflowUsageWarning": true,
   "theme": "dark",
