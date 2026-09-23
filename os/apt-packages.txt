@@ -14,12 +14,13 @@ fd-find
 bat
 direnv
 shellcheck
-unzip
 fontconfig
-gcc
 qdbus-qt6
-emacs-pgtk
+wl-clipboard
+keyd
 nodejs
 npm
 pipx
 shfmt
+gh
+ksshaskpass

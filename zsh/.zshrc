@@ -44,7 +44,7 @@ zstyle ':completion:*:*:kill:*' command 'ps -u $USER -o pid,%cpu,comm'
 source "$ZDOTDIR/plugins/fzf-tab/fzf-tab.plugin.zsh"
 zstyle ':fzf-tab:*' switch-group '<' '>'
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always --icons=auto $realpath'
-zstyle ':fzf-tab:complete:(cp|mv|rm|bat|less|e|emacsclient):*' fzf-preview \
+zstyle ':fzf-tab:complete:(cp|mv|rm|bat|less|e|lite-xl):*' fzf-preview \
   'bat --color=always --style=numbers --line-range=:100 $realpath 2>/dev/null || eza -1 --color=always --icons=auto $realpath'
 
 source "$ZDOTDIR/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
@@ -82,7 +82,7 @@ bindkey -s '\ez' 'cdi\n'
 alias ls='eza --group-directories-first --icons=auto'
 alias la='eza -a --icons=auto'
 alias cp='cp -iv' rm='rm -iv' mkdir='mkdir -pv' df='df -h'
-alias e='emacsclient -t' eg='emacsclient -c -n'
+alias e='lite-xl'
 export MANPAGER="sh -c 'col -bx | bat -l man -p'" MANROFFOPT='-c'
 
 # --- widgets ---

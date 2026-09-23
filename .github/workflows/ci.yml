@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     container: debian:trixie
     steps:
-      - run: apt-get update -q && apt-get install -y -q git ca-certificates
+      - run: apt-get update -q && apt-get install -y -q git ca-certificates lua5.4
       - uses: actions/checkout@v4
         with:
           submodules: true
@@ -20,30 +20,27 @@ jobs:
           while read -r t; do uv tool install "$t"; done < os/uv-tools.txt
           xargs -a os/npm-packages.txt npm install -g
           for b in uv ruff basedpyright tsc typescript-language-server prettier; do command -v "$b"; done
-      - run: shellcheck bootstrap.sh bin/dots os/*.sh os/macos/*.sh claude/statusline.sh kde/*.sh
+      - run: PATH=/tmp/ci-home/.local/bin:$PATH ruff check setup.py
+      - run: shellcheck claude/statusline.sh kde/env.sh
+      - run: luac5.4 -p lite-xl/init.lua
       - run: zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/home.zshenv
-      - run: jq empty claude/settings.json && git config -f config/git/config -l >/dev/null
-      - name: link into a fresh HOME twice (move aside, prune), start the real shell
+      - run: jq empty claude/settings.work.json claude/settings.personal.json && git config -f config/git/config -l >/dev/null
+      - name: link into a fresh HOME twice (move aside, prune), check, dry-run sync, start the real shell
         run: |
-          export HOME=/tmp/ci-home
+          export HOME=/tmp/ci-home PATH=/tmp/ci-home/.local/bin:$PATH
           mkdir -p "$HOME/.config/ghostty" && echo old > "$HOME/.config/ghostty/config"
-          bin/dots link | tee /tmp/link.log
+          python3 setup.py link --profile work | tee /tmp/link.log
           grep -q "^moved      $HOME/.config/ghostty/config" /tmp/link.log
-          bin/dots link
-          bin/dots check
-          test -x "$HOME/.local/bin/dots"
+          python3 setup.py link
+          python3 setup.py check
+          test "$(cat "$HOME/.local/state/dotfiles/profile")" = work
+          test "$(readlink "$HOME/.claude/settings.json")" = "$PWD/claude/settings.work.json"
+          uv python install 3.9
+          uv run --python 3.9 --no-project python setup.py link
+          uv run --python 3.9 --no-project python setup.py check
+          python3 setup.py --dry-run
           out=$(timeout 30 zsh -i -c exit 2>&1 | grep -v "can.t change option: zle" || true)
           [ -z "$out" ] || { echo "$out"; exit 1; }
-      - uses: actions/cache@v4
-        with:
-          path: /tmp/ci-home/.config/emacs/elpa
-          key: elpa-${{ runner.os }}-${{ hashFiles('emacs/init.el') }}
-      - name: load init.el (installs packages), then byte-compile
-        run: |
-          export HOME=/tmp/ci-home
-          xdg='(setq user-emacs-directory (expand-file-name "~/.config/emacs/") package-user-dir (expand-file-name "~/.config/emacs/elpa"))'
-          emacs --batch --eval "$xdg" -l emacs/early-init.el -l emacs/init.el --eval '(message "loaded %d packages" (length package-activated-list))'
-          emacs --batch --eval "$xdg" -l emacs/early-init.el -l emacs/init.el -f batch-byte-compile emacs/early-init.el emacs/init.el
 
   macos:
     runs-on: macos-latest
@@ -55,28 +52,19 @@ jobs:
         run: |
           export HOMEBREW_NO_AUTO_UPDATE=1
           HOMEBREW_BUNDLE_CASK_SKIP=$(brew bundle list --file os/Brewfile --cask | tr '\n' ' ') brew bundle --file os/Brewfile
-      - run: brew install -q emacs
-      - run: shellcheck bootstrap.sh bin/dots os/*.sh os/macos/*.sh claude/statusline.sh kde/*.sh
+      - run: brew install -q lua && ruff check setup.py && luac -p lite-xl/init.lua
+      - run: shellcheck claude/statusline.sh kde/env.sh
       - run: zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/home.zshenv
       - run: plutil -lint os/macos/*.plist
-      - name: link into a fresh HOME twice (move aside, prune), start the real shell
+      - name: link into a fresh HOME twice (move aside, prune), check, dry-run sync, start the real shell
         run: |
           export HOME="$RUNNER_TEMP/ci-home"
           mkdir -p "$HOME/.config/ghostty" && echo old > "$HOME/.config/ghostty/config"
-          bin/dots link | tee "$RUNNER_TEMP/link.log"
+          python3 setup.py link --profile personal | tee "$RUNNER_TEMP/link.log"
           grep -q "^moved      $HOME/.config/ghostty/config" "$RUNNER_TEMP/link.log"
-          bin/dots link
-          bin/dots check
-          test -x "$HOME/.local/bin/dots"
+          python3 setup.py link
+          python3 setup.py check
+          test "$(readlink "$HOME/.claude/settings.json")" = "$PWD/claude/settings.personal.json"
+          python3 setup.py --dry-run
           out=$(zsh -i -c exit 2>&1 | grep -v "can.t change option: zle" || true)
           [ -z "$out" ] || { echo "$out"; exit 1; }
-      - uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/ci-home/.config/emacs/elpa
-          key: elpa-${{ runner.os }}-${{ hashFiles('emacs/init.el') }}
-      - name: load init.el (installs packages), then byte-compile
-        run: |
-          export HOME="$RUNNER_TEMP/ci-home"
-          xdg='(setq user-emacs-directory (expand-file-name "~/.config/emacs/") package-user-dir (expand-file-name "~/.config/emacs/elpa"))'
-          emacs --batch --eval "$xdg" -l emacs/early-init.el -l emacs/init.el --eval '(message "loaded %d packages" (length package-activated-list))'
-          emacs --batch --eval "$xdg" -l emacs/early-init.el -l emacs/init.el -f batch-byte-compile emacs/early-init.el emacs/init.el

@@ -1,6 +1,5 @@
-tap "jimeh/emacs-builds"
-
 brew "git"
+brew "gh"
 brew "node"
 brew "uv"
 brew "ruff"
@@ -21,7 +20,6 @@ brew "git-delta"
 brew "direnv"
 brew "shellcheck"
 
-cask "emacs-app"
 cask "ghostty"
 cask "claude-code"
 cask "font-commit-mono-nerd-font"

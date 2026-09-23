@@ -2,5 +2,5 @@
 .remember/
 .cc-writes/
 .mcp.json
-*.elc
 .zsh_sessions
+__pycache__/

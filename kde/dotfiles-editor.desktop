@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Lite XL (dotfiles)
+Exec=lite-xl %F
+MimeType=text/plain;
+Icon=accessories-text-editor
+StartupWMClass=lite-xl
+NoDisplay=true

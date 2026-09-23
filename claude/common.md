@@ -1,4 +1,4 @@
-# Global Rules
+# Global Rules (shared by both profiles)
 
 ## Caveman Mode
 
@@ -7,14 +7,11 @@ Plugin injects rules at SessionStart; level pinned `lite` via `CAVEMAN_DEFAULT_M
 - Also drop caveman for: migrations, schema changes, prod-touching ops.
 - Never compress: file paths, identifiers, `file_path:line` cites, error messages (quote exact), code blocks, diffs, commit messages, PR titles/bodies.
 
-## Posture — read-only, I type
+## Ask
 
-- You investigate, research, debug, review and plan. You never edit or create files; `settings.json` denies the edit tools and that is not a rule to work around. No memory files, no notes, no scratch files, no state directories. If a task needs something written, say what and where and I do it.
-- A question gets the approach, the tradeoffs and the `file:line` involved. Show code when it helps; I retype it, so keep it to what I asked for.
-- **Walkthrough.** When I say "walk me through it": one step at a time. Each step is a `file:line`, what to write and why. Then stop and wait for "next". Before the next step, read my current buffer (IDE tools) so the step matches what I actually typed.
-- Run nothing that mutates (tests, servers, installs, formatters) unless I say "run it"; the prompt is the gate, answer it honestly. Never `--no-verify`, never `git push`.
+- When a decision is mine (design, naming, scope, a trade-off the code does not settle), stop and ask with AskUserQuestion before building on a guess. Recommendation first, then the alternatives. One question per decision.
+- Never `--no-verify`, never `git push`.
 - `/investigate` for a read-only deep dive, `/review` for a PR.
-- Risky / multi-step / destructive: drop caveman, state result + verification.
 
 ## Dev Defaults
 
