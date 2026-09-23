@@ -4,3 +4,4 @@
 .mcp.json
 .zsh_sessions
 __pycache__/
+.ruff_cache/

@@ -404,22 +404,17 @@ def linux_packages():
     for tool, debian_name in (("bat", "batcat"), ("fd", "fdfind")):
         shim(Path("/usr/bin") / debian_name, BIN / tool)
 
-    step("uv and npm tools")
-    env = dict(os.environ, PATH=f"{BIN}:{os.environ['PATH']}", npm_config_prefix=str(HOME / ".local"))
-    if not have("uv", env):
-        run("pipx", "install", "uv", env=env)
-    run("pipx", "upgrade-all", env=env)
-    for tool in read_list(REPO / "os/uv-tools.txt"):
-        run("uv", "tool", "install", tool, env=env)
-    run("uv", "tool", "upgrade", "--all", env=env)
+    step("npm tools")  # language servers apt does not carry; under ~/.local, no sudo
+    env = dict(os.environ, npm_config_prefix=str(HOME / ".local"))
     run("npm", "install", "-g", *read_list(REPO / "os/npm-packages.txt"), env=env)
 
 
 def linux_font(tmp):
     step("font")
     fonts = HOME / ".local/share/fonts/CommitMonoNerdFont"
-    if read_state("font") == NERD_FONTS_TAG and fonts.is_dir():
+    if fonts.is_dir() and read_state("font") in ("", NERD_FONTS_TAG):  # "": installed before the state key existed
         say("ok", f"nerd-fonts {NERD_FONTS_TAG}")
+        write_state("font", NERD_FONTS_TAG)
         return
     archive = tmp / "font.zip"
     fetch_verified(
@@ -429,7 +424,7 @@ def linux_font(tmp):
     if DRY:
         return
     shutil.rmtree(fonts, ignore_errors=True)
-    fonts.mkdir(parents=True)
+    fonts.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(archive) as z:
         for member in z.namelist():
             if member not in ("LICENSE", "README.md"):

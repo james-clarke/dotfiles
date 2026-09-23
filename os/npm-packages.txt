@@ -1,3 +1,5 @@
 typescript
 typescript-language-server
+basedpyright
+vscode-langservers-extracted
 prettier

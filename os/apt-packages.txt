@@ -4,8 +4,6 @@ git-delta
 jq
 curl
 gnupg
-bubblewrap
-socat
 fzf
 eza
 zoxide
@@ -13,14 +11,13 @@ ripgrep
 fd-find
 bat
 direnv
-shellcheck
 fontconfig
 qdbus-qt6
 wl-clipboard
 keyd
 nodejs
 npm
-pipx
-shfmt
 gh
 ksshaskpass
+build-essential
+clangd

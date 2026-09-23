@@ -10,13 +10,15 @@ local function first_existing(paths)
   end
 end
 
+-- absolute path of a tool, so a GUI launch with a minimal PATH still finds it; nil when not installed
 local function bin(name)
   return first_existing {
     HOME .. "/.local/bin/" .. name,
     "/opt/homebrew/bin/" .. name,
     "/usr/local/bin/" .. name,
     "/usr/bin/" .. name,
-  } or name
+    "/Library/Developer/CommandLineTools/usr/bin/" .. name,
+  }
 end
 
 -- look
@@ -36,30 +38,29 @@ config.line_limit = 100
 config.scroll_past_end = false
 config.ignore_files = {
   "^%.git$", "^%.venv$", "^venv$", "^node_modules$", "^__pycache__$", "^%.mypy_cache$",
-  "^%.ruff_cache$", "^%.pytest_cache$", "^dist$", "^build$", "^%.DS_Store$",
+  "^%.pytest_cache$", "^dist$", "^build$", "^%.DS_Store$",
 }
 
--- language servers (plugin `lsp`, installed by setup.py via lpm). Binaries come from uv/npm/Homebrew,
--- resolved by absolute path so a GUI launch with a minimal PATH still finds them.
+-- language servers (plugin `lsp`, installed by setup.py via lpm). Binaries come from apt, npm or
+-- Homebrew (clangd from Xcode CLT on macOS); a server whose binary is missing is not registered.
+-- Nothing formats on save; Alt+Shift+F asks the server.
 local ok, lsp = pcall(require, "plugins.lsp")
 if ok then
   config.plugins.lsp.show_diagnostics = true
   config.plugins.lsp.stop_unneeded_servers = true
-  lsp.add_server {
+
+  local function server(spec)
+    if spec.command[1] then lsp.add_server(spec) end
+  end
+
+  server {
     name = "basedpyright",
     language = "python",
     file_patterns = { "%.py$" },
     command = { bin "basedpyright-langserver", "--stdio" },
     verbose = false,
   }
-  lsp.add_server {  -- lint diagnostics + formatting (alt+shift+f); basedpyright does types and navigation
-    name = "ruff",
-    language = "python",
-    file_patterns = { "%.py$" },
-    command = { bin "ruff", "server" },
-    verbose = false,
-  }
-  lsp.add_server {
+  server {
     name = "typescript",
     language = {
       { id = "javascript", pattern = "%.[cm]?js$" },
@@ -69,6 +70,27 @@ if ok then
     },
     file_patterns = { "%.jsx?$", "%.[cm]js$", "%.tsx?$" },
     command = { bin "typescript-language-server", "--stdio" },
+    verbose = false,
+  }
+  server {
+    name = "html",
+    language = "html",
+    file_patterns = { "%.html?$" },
+    command = { bin "vscode-html-language-server", "--stdio" },
+    verbose = false,
+  }
+  server {
+    name = "css",
+    language = "css",
+    file_patterns = { "%.css$" },
+    command = { bin "vscode-css-language-server", "--stdio" },
+    verbose = false,
+  }
+  server {
+    name = "clangd",
+    language = "c",
+    file_patterns = { "%.[ch]$" },
+    command = { bin "clangd" },
     verbose = false,
   }
 end

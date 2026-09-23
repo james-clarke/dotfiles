@@ -35,11 +35,11 @@ Nothing here is tied to a person or an employer. Fork it, change one URL, and it
 | Area | Choice | Why |
 |---|---|---|
 | Editor | Lite XL 2.1.8, portable install under `~/.local` (Debian) or `/Applications` (macOS), one `init.lua` for both | Starts in well under 100 ms, ~5 MB, Lua-configured, native Wayland (SDL3) and native on M1 |
-| Editor plugins | `lsp` + `lsp_snippets` + `snippets`, `language_ts`, `autoinsert`, `bracketmatch`, `indentguide`, `gitdiff_highlight`, `editorconfig`; installed by `lpm` from `os/lite-xl-plugins.txt` | Completion, diagnostics, rename and go-to-definition for Python and TypeScript, nothing else |
-| LSP servers | `basedpyright` + `ruff server`, `typescript-language-server`, from `uv tool` / `npm -g` / Homebrew | Same binaries the shell uses; the editor resolves them by absolute path |
+| Editor plugins | `lsp` + `lsp_snippets` + `snippets`, `language_ts`, `autoinsert`, `bracketmatch`, `indentguide`, `gitdiff_highlight`, `editorconfig`; installed by `lpm` from `os/lite-xl-plugins.txt` | Completion, diagnostics, rename and go-to-definition for Python, JavaScript/TypeScript, HTML, CSS and C, nothing else |
+| LSP servers | `basedpyright`, `typescript-language-server`, `vscode-langservers-extracted` (html, css) from `npm -g` / Homebrew; `clangd` from apt / Xcode CLT | Same binaries the shell uses; the editor resolves them by absolute path and skips any that is missing |
 | Shell | zsh, no framework | `~/.zshenv` stub + `~/.config/zsh/`; plugins as git submodules; cached tool init |
 | Terminal | Ghostty | One config file for KDE and macOS; GPU fast; Meta passes through cleanly |
-| Toolchains | apt / Homebrew; `uv tool` and `npm -g` under `~/.local` on Debian for what apt lacks | No version manager, no shims; upgrades ride the package manager |
+| Toolchains | apt / Homebrew; `npm -g` under `~/.local` on Debian for the language servers apt lacks | No version manager, no shims; upgrades ride the package manager |
 | Git | delta pager, sane defaults | Identity, keys and signing stay whatever the machine already has |
 | Keyboard | Caps Lock ↔ Left Ctrl: `keyd` on Debian, `hidutil` on macOS | Kernel-level on Linux (works in SDDM and a TTY, no Wayland regressions); no background process on macOS |
 | Fonts | CommitMono Nerd Font | Ligatures + icons, installed by `setup.py` |
@@ -63,8 +63,8 @@ Package counts stay small on purpose: nine editor plugins, no Electron, no daemo
    Three things during the run need you: the sudo password, a passphrase for the new SSH key, and a browser login to GitHub (`gh` shows a one-time code). What it does, in order:
    - `git pull --ff-only` and `git submodule update` (a no-op right after the clone);
    - links every config file into place ([Where things land](#where-things-land)); anything already there is renamed `<file>.bak`;
-   - `apt-get update`, installs everything in `os/apt-packages.txt` (including `keyd`, `wl-clipboard`, `gh`, `nodejs`, `npm`, `pipx`, `shfmt`), then `apt-get upgrade`;
-   - `pipx install uv`, then `uv tool install` for `os/uv-tools.txt` (`ruff`, `basedpyright`, `djlint`) and `npm install -g` for `os/npm-packages.txt` (`typescript`, `typescript-language-server`, `prettier`), all under `~/.local`, no sudo;
+   - `apt-get update`, installs everything in `os/apt-packages.txt` (including `keyd`, `wl-clipboard`, `gh`, `nodejs`, `npm`, `build-essential`, `clangd`), then `apt-get upgrade`;
+   - `npm install -g` for `os/npm-packages.txt` (`typescript`, `typescript-language-server`, `basedpyright`, `vscode-langservers-extracted`, `prettier`), under `~/.local`, no sudo;
    - downloads CommitMono Nerd Font into `~/.local/share/fonts` and refreshes the font cache;
    - installs Lite XL (pinned release, SHA-256 checked) into `~/.local/share/lite-xl` with `lite-xl` on `~/.local/bin`, then `lpm` and the plugins in `os/lite-xl-plugins.txt`;
    - installs Ghostty from the community `.deb` build (pinned version and SHA-256) or leaves Konsole in place if no build exists for your Debian codename;
@@ -93,7 +93,7 @@ Package counts stay small on purpose: nine editor plugins, no Electron, no daemo
    (`~/Developer` gets its own Finder icon; the rest of this README writes `~/dev/dotfiles`.) It needs you for the sudo password (Homebrew), a passphrase for the new SSH key, and a browser login to GitHub. What it does, in order:
    - `git pull --ff-only` and `git submodule update`;
    - links every config file into place; anything already there is renamed `<file>.bak`;
-   - installs Homebrew if missing (the only thing curl-piped in this repo), then `brew update`, `brew bundle` against `os/Brewfile`, `brew upgrade`, `brew autoremove`, `brew cleanup`. Formulas: `git`, `gh`, `node`, `uv`, `ruff`, `shfmt`, `basedpyright`, `typescript-language-server`, `typescript`, `prettier`, `djlint`, `jq`, `fzf`, `eza`, `zoxide`, `ripgrep`, `fd`, `bat`, `git-delta`, `direnv`, `shellcheck`. Casks: Ghostty, Claude Code, the Nerd Font;
+   - installs Homebrew if missing (the only thing curl-piped in this repo), then `brew update`, `brew bundle` against `os/Brewfile`, `brew upgrade`, `brew autoremove`, `brew cleanup`. Formulas: `git`, `gh`, `node`, `typescript`, `typescript-language-server`, `basedpyright`, `vscode-langservers-extracted`, `prettier`, `jq`, `fzf`, `eza`, `zoxide`, `ripgrep`, `fd`, `bat`, `git-delta`, `direnv`. Casks: Ghostty, Claude Code, the Nerd Font. C comes from the Command Line Tools already installed in step 1 (`clang`, `clangd`, `make`);
    - installs Lite XL from the pinned `.dmg` (SHA-256 checked, quarantine flag removed so it opens without the right-click dance) into `/Applications`, links `lite-xl` into `~/.local/bin`, then `lpm` and the plugins;
    - installs a LaunchAgent that swaps Caps Lock and Left Ctrl at every login (`hidutil`);
    - makes `/bin/zsh` the login shell if it is not;
@@ -135,7 +135,7 @@ Both installs end with the same step, and it is why a fresh machine needs no man
    python3 ~/dev/dotfiles/setup.py check
    ```
 
-4. Open the editor: `Meta+E` on KDE, Spotlight → "Lite XL" on macOS, or `e file` in any terminal. Open a `.py` or `.ts` file and the language servers start; `Ctrl+Space` completes, `Alt+D` jumps to a definition, `Alt+R` renames (see [Editor: Lite XL](#editor-lite-xl)).
+4. Open the editor: `Meta+E` on KDE, Spotlight → "Lite XL" on macOS, or `e file` in any terminal. Open a `.py`, `.js`, `.html`, `.css` or `.c` file and the language server for it starts; `Ctrl+Space` completes, `Alt+D` jumps to a definition, `Alt+R` renames (see [Editor: Lite XL](#editor-lite-xl)).
 
 5. Linux only, if the first run happened outside a Plasma session (over SSH, before the first login): run `python3 ~/dev/dotfiles/setup.py` again now, then log out and in.
 
@@ -148,7 +148,6 @@ setup.py                the one command: pull, link, install/upgrade, daemons, K
 os/
   apt-packages.txt      flat apt list
   npm-packages.txt      npm -g list (Debian only; Homebrew formulas on macOS)
-  uv-tools.txt          uv tool list (Debian only; Homebrew formulas on macOS)
   Brewfile              tap, formulas, casks
   lite-xl-plugins.txt   lpm plugin list
   macos/capslock.plist  LaunchAgent: Caps Lock <-> Left Ctrl
@@ -204,11 +203,11 @@ The KDE settings (`kwriteconfig6` keys) and the macOS `defaults` list live as ta
 
 **Editor everywhere.** `EDITOR` and `VISUAL` are `lite-xl` in shells (`.zshenv`) and in the Plasma session (`kde/env.sh`). Each invocation is its own process that exits when its window closes, so `git commit`, `crontab -e` and `Ctrl+X Ctrl+G` from the shell block the way they should; no single-instance plugin is installed for that reason. `lite-xl path:line` opens at a line.
 
-**One PATH story.** `~/.local/bin` first (on Debian that is where `uv tool`, `npm -g` via `npm_config_prefix`, `pipx` and the `bat`/`fd` shims put their binaries), then Homebrew's `bin` on macOS, then the system. Shells get it from `.zshenv`, so scripts, `ssh mac cmd` and the editor's LSP servers see the same PATH as a terminal. GUI apps get it from the Plasma session env on Linux and from `exec-path-from-shell` on macOS. Lite XL launched from Spotlight or a KDE shortcut may see a shorter PATH, so `init.lua` resolves the language servers by absolute path (`~/.local/bin`, then Homebrew).
+**One PATH story.** `~/.local/bin` first (on Debian that is where `npm -g` via `npm_config_prefix` and the `bat`/`fd` shims put their binaries), then Homebrew's `bin` on macOS, then the system. Shells get it from `.zshenv`, so scripts, `ssh mac cmd` and the editor's LSP servers see the same PATH as a terminal. GUI apps get it from the Plasma session env on Linux. Lite XL launched from Spotlight or a KDE shortcut may see a shorter PATH, so `init.lua` resolves the language servers by absolute path (`~/.local/bin`, Homebrew, `/usr/bin`, the Xcode Command Line Tools).
 
 **Keyboard.** Caps Lock and Left Ctrl are swapped on both OSes, which makes every `Ctrl` chord comfortable. On Debian `keyd` does it at the kernel input level (`/etc/keyd/default.conf`), so it holds in Plasma, SDDM and a TTY alike and does not depend on the XKB option that has regressed across Plasma releases; on macOS it is `hidutil`. Key repeat is fast on both. `Meta+E` (KDE) opens the editor, `Meta+Return` a terminal, `Meta+D` KRunner; `Meta+Arrows` focus the window in that direction, `Meta+Shift+Arrows` tile it to that edge, `Meta+F` maximizes, `Meta+Shift+F` goes fullscreen, `Meta+Shift+Q` closes. On macOS, Option sends Alt in Ghostty; Command stays Command. Window tiling there is macOS' own (Window > Move & Resize, or drag to a screen edge; `Fn+Ctrl+Arrows` by default).
 
-**Package managers own upgrades.** apt installs Ghostty, Claude Code, node and the CLI tools on Debian; `uv tool` and `npm -g` add the language servers apt does not carry. Homebrew installs all of it on macOS, as formulas and casks. Lite XL and `lpm` are the two things neither has: pinned GitHub releases, SHA-256 checked, installed without root. `lpm` installs and upgrades the editor plugins. `setup.py` runs every upgrade. Nothing is curl-piped except Homebrew's installer.
+**Package managers own upgrades.** apt installs Ghostty, Claude Code, node, `clangd` and the CLI tools on Debian; `npm -g` adds the language servers apt does not carry. Homebrew installs all of it on macOS, as formulas and casks; C tooling is the Command Line Tools. Lite XL and `lpm` are the two things neither has: pinned GitHub releases, SHA-256 checked, installed without root. `lpm` installs and upgrades the editor plugins. `setup.py` runs every upgrade. Nothing is curl-piped except Homebrew's installer.
 
 ---
 
@@ -227,17 +226,17 @@ Plugins come through [`lpm`](https://github.com/lite-xl/lite-xl-plugin-manager),
 | Plugin | What |
 |---|---|
 | `lsp`, `lsp_snippets`, `snippets` | Completion, hover, diagnostics, go-to-definition, rename, symbol search from any LSP server; snippet-form completions |
-| `language_ts` | TypeScript/TSX syntax (JavaScript and Python ship with the core) |
+| `language_ts` | TypeScript/TSX syntax (JavaScript, Python, HTML, CSS and C ship with the core) |
 | `autoinsert`, `bracketmatch`, `indentguide` | closing pairs, matching-bracket underline, indent guides |
 | `gitdiff_highlight` | changed lines in the gutter |
 | `editorconfig` | honours a project's `.editorconfig` |
 | bundled: `treeview`, `projectsearch`, `autoreload`, `trimwhitespace`, `contextmenu`, `scale`, `tabularize`, and the rest of `data/plugins` | file tree, project-wide search, reload on disk change, and so on |
 
-Not installed on purpose: `terminal` (Ghostty is the terminal, a split away), `minimap`, `ipc` (single-instance mode would break `git commit` waiting for the editor), `autosave`, `lsp_python` / `lsp_typescript` (they download their own server binaries; the servers here come from `uv`, `npm` and Homebrew and are shared with the shell).
+Not installed on purpose: `terminal` (Ghostty is the terminal, a split away), `minimap`, `ipc` (single-instance mode would break `git commit` waiting for the editor), `autosave`, `lsp_python` / `lsp_typescript` / `lsp_c` (they download their own server binaries; the servers here come from apt, `npm` and Homebrew and are shared with the shell).
 
 ### Config
 
-`lite-xl/init.lua` is the whole config, linked to `~/.config/lite-xl/init.lua` on both OSes (the search order is the same on macOS). It sets CommitMono Nerd Font 13/12pt when the font file is present (the bundled JetBrains Mono otherwise), 4-space soft tabs, a guide at 100 columns, the ignored directories (`.git`, `.venv`, `node_modules`, `__pycache__`, caches, `dist`, `build`), and registers the language servers with the `lsp` plugin: `basedpyright-langserver --stdio` and `ruff server` for `.py`, `typescript-language-server --stdio` for `.js`/`.jsx`/`.ts`/`.tsx`. All are located by absolute path (`~/.local/bin`, then `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`), so the editor finds them even when launched from Spotlight or a KDE shortcut with a minimal PATH. Everything else is the editor's defaults; the command palette (`Ctrl+Shift+P`) lists every command with its binding.
+`lite-xl/init.lua` is the whole config, linked to `~/.config/lite-xl/init.lua` on both OSes (the search order is the same on macOS). It sets CommitMono Nerd Font 13/12pt when the font file is present (the bundled JetBrains Mono otherwise), 4-space soft tabs, a guide at 100 columns, the ignored directories (`.git`, `.venv`, `node_modules`, `__pycache__`, caches, `dist`, `build`), and registers the language servers with the `lsp` plugin: `basedpyright-langserver --stdio` for `.py`, `typescript-language-server --stdio` for `.js`/`.jsx`/`.ts`/`.tsx`, `vscode-html-language-server --stdio` for `.html`, `vscode-css-language-server --stdio` for `.css`, `clangd` for `.c`/`.h`. Each is located by absolute path (`~/.local/bin`, then `/opt/homebrew/bin`, `/usr/local/bin`, `/usr/bin`, the Xcode Command Line Tools), so the editor finds them even when launched from Spotlight or a KDE shortcut with a minimal PATH; a server whose binary is not installed is simply not registered. Everything else is the editor's defaults; the command palette (`Ctrl+Shift+P`) lists every command with its binding.
 
 ### Keys worth knowing
 
@@ -251,7 +250,7 @@ Not installed on purpose: `terminal` (Ghostty is the terminal, a split away), `m
 | `Alt+R` / `Alt+A` | rename symbol / symbol info under the cursor (`lsp`) |
 | `Alt+E` / `Ctrl+Alt+E` | diagnostics of this file / of the project (`lsp`) |
 | `Alt+S` / `Alt+Shift+S` | document symbols / workspace symbol search (`lsp`) |
-| `Alt+Shift+F` | format document through the server: `ruff server` for Python, `typescript-language-server` for TS (`lsp`) |
+| `Alt+Shift+F` | format document through the server (JS/TS, HTML, CSS, C); never automatic (`lsp`) |
 | `Ctrl+D` / `Ctrl+Shift+L` | select next occurrence / select all occurrences (multi-caret) |
 | `Ctrl+Shift+K` / `Ctrl+Shift+D` | delete line / duplicate line |
 | `Ctrl+/` | toggle comment |
@@ -265,7 +264,7 @@ On macOS `Ctrl` reads as `Cmd` for the editor's own bindings (`⌘P`, `⌘⇧P`,
 
 ### Formatting and linting
 
-Python gets two servers: `basedpyright` for types, completion and navigation, and `ruff server` for lint diagnostics and formatting, so `Alt+Shift+F` is `ruff format` and the ruff rules show inline. TypeScript formatting comes from `typescript-language-server`; `prettier -w` from the shell for anything it should own. No format-on-save plugin, on purpose: `editorconfig` keeps indentation honest while typing and the formatter runs when you ask.
+Nothing formats automatically, on purpose: `editorconfig` keeps indentation honest while typing and a formatter runs only when you ask. `Alt+Shift+F` asks the file's server (`typescript-language-server`, the html and css servers, `clangd`, which follows a `.clang-format` if the project has one); `prettier -w` from the shell for anything it should own. Python has one server, `basedpyright`: types, errors, completion, navigation; no linter or formatter in the editor.
 
 ---
 
@@ -273,7 +272,7 @@ Python gets two servers: `basedpyright` for types, completion and navigation, an
 
 `~/.zshenv` is the only file in `$HOME`; it sets `ZDOTDIR=~/.config/zsh` and sources `~/.config/zsh/.zshenv`. Everything else is in that directory.
 
-- **`.zshenv`** runs for every zsh, including scripts: XDG variables, Homebrew's `bin` and then `~/.local/bin` in front of PATH, `EDITOR`, `PAGER`, `npm_config_prefix=~/.local` (so `npm -g` never needs sudo), npm/python cache locations, cargo env.
+- **`.zshenv`** runs for every zsh, including scripts: XDG variables, Homebrew's `bin` and then `~/.local/bin` in front of PATH, `EDITOR`, `PAGER`, `npm_config_prefix=~/.local` (so `npm -g` never needs sudo), npm/python cache locations.
 - **`.zprofile`** runs for login shells. On macOS, `/etc/zprofile` runs Apple's `path_helper` after `.zshenv` and reorders PATH; `.zprofile` puts Homebrew and `~/.local/bin` back in front. On Linux it only repeats the `~/.local/bin` prepend.
 - **`.zshrc`** runs for interactive shells:
   - history: 100k lines, shared between sessions, deduplicated, `HIST_IGNORE_SPACE`;
@@ -341,14 +340,13 @@ No version manager. Each tool comes from the package manager that has it, and `s
 | Tool | Debian | macOS |
 |---|---|---|
 | `node`, `npm` | apt (`nodejs` 20, the Debian 13 release) | `brew "node"` (current) |
-| `uv` | `pipx install uv` (apt has `pipx`, not `uv`) | `brew "uv"` |
-| `ruff`, `basedpyright` | `uv tool install`, from `os/uv-tools.txt` | Homebrew formulas |
-| `typescript`, `typescript-language-server`, `prettier` | `npm install -g`, from `os/npm-packages.txt` | Homebrew formulas |
-| `shfmt`, `jq`, `fzf`, `eza`, `zoxide`, `ripgrep`, `fd`, `bat`, `delta`, `direnv`, `shellcheck` | apt | Homebrew formulas |
+| `typescript`, `typescript-language-server`, `basedpyright`, `vscode-langservers-extracted`, `prettier` | `npm install -g`, from `os/npm-packages.txt` | Homebrew formulas |
+| `clang`, `clangd`, `make` | apt (`build-essential`, `clangd`) | Xcode Command Line Tools |
+| `jq`, `fzf`, `eza`, `zoxide`, `ripgrep`, `fd`, `bat`, `delta`, `direnv` | apt | Homebrew formulas |
 
 On Debian everything user-installed lands under `~/.local` (`npm_config_prefix` is set in `.zshenv` and by `setup.py`), so nothing needs sudo and nothing fights apt. Per-project versions are the project's business (`.envrc`, a virtualenv, `npx`); nothing global changes per directory.
 
-To add a tool for every machine: apt name into `os/apt-packages.txt`, formula into `os/Brewfile`, and for Debian-only gaps a line in `os/uv-tools.txt` or `os/npm-packages.txt`; then `setup.py`.
+To add a tool for every machine: apt name into `os/apt-packages.txt`, formula into `os/Brewfile`, and for Debian-only gaps a line in `os/npm-packages.txt`; then `setup.py`. Python tools that apt does not carry (a linter, a formatter) belong to the project: a virtualenv, not the machine.
 
 ---
 
@@ -395,7 +393,7 @@ Two profiles, picked once per machine with `setup.py --profile work|personal` an
 
 ### Shared by both profiles
 
-- **Read-only shell without prompts.** Both allow lists cover `rg`, `cat`, `head`, `tail`, `ls`, `wc`, `jq`, `diff`, `stat`, `file`, `which`, `uname`, `test`, the read-only git subcommands including `git fetch` and `git ls-remote`, the read-only `gh` views, `brew list`/`info`, `launchctl list`/`print`, `defaults read`, and the checkers (`ruff check`, `ruff format --check`, `basedpyright`, `tsc --noEmit`, `prettier --check`, `shfmt -d`). Claude Code matches each part of a `a && b` or `a | b` chain separately, so every part has to be on the list for the chain to pass; that is why the list is long. File finding goes through Claude's own Glob and Grep tools, which never prompt. Tools that can write or execute through a flag (`fd -x`, `tree -o`, `sort -o`, `xargs`, `awk`) are deliberately not on it. A shell redirection (`cat x > y`) is checked as a write.
+- **Read-only shell without prompts.** Both allow lists cover `rg`, `cat`, `head`, `tail`, `ls`, `wc`, `jq`, `diff`, `stat`, `file`, `which`, `uname`, `test`, the read-only git subcommands including `git fetch` and `git ls-remote`, the read-only `gh` views, `brew list`/`info`, `launchctl list`/`print`, `defaults read`, and the checkers (`basedpyright`, `tsc --noEmit`, `prettier --check`). Claude Code matches each part of a `a && b` or `a | b` chain separately, so every part has to be on the list for the chain to pass; that is why the list is long. File finding goes through Claude's own Glob and Grep tools, which never prompt. `fd`, `rg`, `sed -n` and `sort` are allowed, and the flags that let them write or execute (`fd -x`/`-X`/`--exec`, `rg --pre`, `sed -i`, `sort -o`) are denied by substring, so `sort -oOUT` and `--in-place` are caught too and a path that happens to contain `-i` prompts. `xargs`, `awk` and `tree` are not on the list. A shell redirection (`cat x > y`) is checked as a write.
 - **`git push` is denied** in both profiles. Push yourself.
 - **No sandbox.** Commands run on the machine as you.
 - **Read anywhere.** `Read(~/**)` and `/tmp`, so it can look at other repos, logs and dotfiles when the question needs it.
@@ -420,7 +418,7 @@ Two profiles, picked once per machine with `setup.py --profile work|personal` an
 
 - `git pull --ff-only` in the repo (a failure, offline or diverged, is reported and the run continues with the local tree) and `git submodule update`;
 - re-links every file (`setup.py link` alone does just this; `setup.py check` verifies every link and exits 1 on drift);
-- Debian: `apt-get update` + install + `upgrade`, `pipx upgrade-all`, `uv tool upgrade --all`, `npm install -g` of the list (which upgrades), the Ghostty pin, `keyd`, the daemon unit, Claude Code, Chrome; macOS: `brew update`, `brew bundle`, `brew upgrade`, `brew autoremove`, `brew cleanup`, the LaunchAgents;
+- Debian: `apt-get update` + install + `upgrade`, `npm install -g` of the list (which upgrades), the Ghostty pin, `keyd`, the daemon unit, Claude Code, Chrome; macOS: `brew update`, `brew bundle`, `brew upgrade`, `brew autoremove`, `brew cleanup`, the LaunchAgents;
 - `lpm install` of the plugin list (idempotent) and `lpm upgrade`;
 - re-applies the KDE table (inside Plasma) or the macOS `defaults` table if it changed;
 - prints the manual tail: new terminal, log out and in, `setup.py check`.
@@ -440,19 +438,20 @@ Every step checks before it acts, so re-running is always safe; `--dry-run` prin
 
 `.github/workflows/ci.yml` runs on every push:
 
-- **Linux job** in a `debian:trixie` container (the exact target): installs every package in `os/apt-packages.txt` (a wrong name fails here, not on your new box), installs every entry of `os/uv-tools.txt` and `os/npm-packages.txt` into a throwaway `HOME` and checks each binary landed in `~/.local/bin`, `ruff check` on `setup.py` (target Python 3.9, so a 3.10+ construct fails here), `shellcheck` on `statusline.sh`, `zsh -n` on every zsh file, `jq` on both settings files, `git config` parse, then `setup.py link --profile work` twice into a fresh `HOME` with a file in the way (the `moved` path, then the stale-link path), `setup.py check`, the same `link` and `check` under a real Python 3.9 from `uv`, a full `setup.py --dry-run` (every step runs its checks and prints its commands, nothing is installed), `luac -p` on `lite-xl/init.lua`, and an interactive zsh start that must print nothing.
-- **macOS job**: `brew bundle` against the real `os/Brewfile` with the casks skipped, so every tap, formula and cask name resolves and the formulas install for real; then `ruff check`, shellcheck, `zsh -n`, `plutil -lint` on both LaunchAgents, the same double `link`, `check` and `--dry-run` with `--profile personal`, `luac -p`, and the interactive zsh start.
+- **Linux job** in a `debian:trixie` container (the exact target): installs every package in `os/apt-packages.txt` (a wrong name fails here, not on your new box), installs every entry of `os/npm-packages.txt` into a throwaway `HOME` and checks that every binary `init.lua` asks for (`bin "..."`) exists after apt and npm, so a server added to the editor config without its package fails here, `ruff check` on `setup.py` (ruff lives in CI only, via `pipx run`; target Python 3.9 in `ruff.toml`), `shellcheck` on the two shell scripts, `zsh -n` on every zsh file, `jq` on both settings files, `git config` parse, then `setup.py link --profile work` twice into a fresh `HOME` with a file in the way (the `moved` path, then the stale-link path), `setup.py check`, a full `setup.py --dry-run` (every step runs its checks and prints its commands, nothing is installed), `luac -p` on `lite-xl/init.lua`, and an interactive zsh start that must print nothing.
+- **python39 job**, on Ubuntu and macOS: the double `link`, `check` and `--dry-run` under a real Python 3.9, the interpreter macOS Command Line Tools ship, so a 3.10+ construct on either OS path of `setup.py` fails here.
+- **macOS job**: `brew bundle` against the real `os/Brewfile` with the casks skipped, so every tap, formula and cask name resolves and the formulas install for real; then `zsh -n`, `plutil -lint` on the LaunchAgent, the same double `link`, `check` and `--dry-run` with `--profile personal`, `luac -p`, and the interactive zsh start.
 
 Not covered: a real `setup.py` sync (needs sudo, a display and a GitHub login), and the editor itself (needs a display).
 
-Locally: `python3 ~/dev/dotfiles/setup.py check` after anything that might have replaced a symlink; `ruff check setup.py` after editing the script.
+Locally: `python3 ~/dev/dotfiles/setup.py check` after anything that might have replaced a symlink; `python3 -m py_compile setup.py` after editing the script (CI runs the linter).
 
 ---
 
 ## Forking
 
 1. Fork on GitHub and clone your fork over HTTPS; the README's clone lines are the only place the URL appears, and the GitHub step switches whatever remote it finds to SSH.
-2. Edit `os/apt-packages.txt`, `os/Brewfile`, `os/uv-tools.txt` and `os/npm-packages.txt` to taste.
+2. Edit `os/apt-packages.txt`, `os/Brewfile` and `os/npm-packages.txt` to taste; `lite-xl/init.lua` registers a server per language, drop or add a block there.
 3. Adjust the `KDE_KEYS` and `MACOS_DEFAULTS` tables in `setup.py`; both are lists of individual settings, remove lines you do not want. Drop `keyd` from the apt list and the `linux_keyd` call if you do not want the Caps Lock swap.
 4. `claude/settings.*.json`: change or drop `model` (it names a specific tier), the plugins (`caveman` and its `extraKnownMarketplaces` entry point at a third-party GitHub repo), and `Read(~/**)` if you want Claude confined to your working directories. Keep one profile if you only need one and delete the other pair of files.
 5. `claude/skills/review` assumes a code host reachable over MCP or comments pasted by hand; `/investigate` works on a bare path. Delete what you do not use.
@@ -472,7 +471,7 @@ Locally: `python3 ~/dev/dotfiles/setup.py check` after anything that might have 
 
 **`compinit: insecure directories` on macOS.** `setup.py` fixes permissions; re-run it, or `compaudit | xargs chmod g-w,o-w`.
 
-**Editor opens but no completion in Python or TypeScript.** The server binary is missing or not where `init.lua` looks: `ls ~/.local/bin/basedpyright-langserver` (Debian) or `ls /opt/homebrew/bin/basedpyright-langserver` (macOS); the `lsp` plugin logs to the editor's log (`Core: Open Log` in the command palette, `Ctrl+Shift+P`). `ls ~/.config/lite-xl/plugins` must list `lsp`; if not, run `setup.py` again and read the `lpm` output.
+**Editor opens but no completion.** The server binary is missing or not where `init.lua` looks (a missing binary means the server is silently not registered): `ls ~/.local/bin/basedpyright-langserver` (Debian) or `ls /opt/homebrew/bin/basedpyright-langserver` (macOS), `which clangd`; the `lsp` plugin logs to the editor's log (`Core: Open Log` in the command palette, `Ctrl+Shift+P`). `ls ~/.config/lite-xl/plugins` must list `lsp`; if not, run `setup.py` again and read the `lpm` output.
 
 **`lpm` says "can't find addon".** Its repository cache is stale: `lpm update`, then `setup.py` again. `lpm` is told the plugin API level with `--mod-version`, never `--binary`, because asking the binary launches the editor.
 

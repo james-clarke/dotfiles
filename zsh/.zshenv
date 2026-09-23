@@ -18,5 +18,3 @@ export PAGER=less LESSHISTFILE="$XDG_STATE_HOME/less/history"
 export npm_config_prefix="$HOME/.local" npm_config_cache="$XDG_CACHE_HOME/npm" npm_config_userconfig="$XDG_CONFIG_HOME/npm/npmrc"
 export PYTHON_HISTORY="$XDG_STATE_HOME/python/history"
 export HOMEBREW_NO_ANALYTICS=1
-
-[[ -f $HOME/.cargo/env ]] && . "$HOME/.cargo/env"

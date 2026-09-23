@@ -6,21 +6,20 @@ jobs:
     runs-on: ubuntu-latest
     container: debian:trixie
     steps:
-      - run: apt-get update -q && apt-get install -y -q git ca-certificates lua5.4
+      - run: apt-get update -q && apt-get install -y -q git ca-certificates lua5.4 pipx shellcheck
       - uses: actions/checkout@v4
         with:
           submodules: true
       - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: every package in os/apt-packages.txt exists on trixie
         run: xargs -a os/apt-packages.txt apt-get install -y -q
-      - name: every uv tool and npm package resolves and lands in ~/.local/bin
+      - name: every npm package resolves; every binary init.lua asks for exists after apt + npm
         run: |
           export HOME=/tmp/ci-home PATH=/tmp/ci-home/.local/bin:$PATH npm_config_prefix=/tmp/ci-home/.local
-          pipx install uv
-          while read -r t; do uv tool install "$t"; done < os/uv-tools.txt
           xargs -a os/npm-packages.txt npm install -g
-          for b in uv ruff basedpyright tsc typescript-language-server prettier; do command -v "$b"; done
-      - run: PATH=/tmp/ci-home/.local/bin:$PATH ruff check setup.py
+          test -x "$HOME/.local/bin/prettier" && test -x "$HOME/.local/bin/tsc"
+          grep -o 'bin "[^"]*"' lite-xl/init.lua | cut -d'"' -f2 | while read -r b; do command -v "$b"; done
+      - run: pipx run ruff check setup.py
       - run: shellcheck claude/statusline.sh kde/env.sh
       - run: luac5.4 -p lite-xl/init.lua
       - run: zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/home.zshenv
@@ -35,12 +34,28 @@ jobs:
           python3 setup.py check
           test "$(cat "$HOME/.local/state/dotfiles/profile")" = work
           test "$(readlink "$HOME/.claude/settings.json")" = "$PWD/claude/settings.work.json"
-          uv python install 3.9
-          uv run --python 3.9 --no-project python setup.py link
-          uv run --python 3.9 --no-project python setup.py check
           python3 setup.py --dry-run
           out=$(timeout 30 zsh -i -c exit 2>&1 | grep -v "can.t change option: zle" || true)
           [ -z "$out" ] || { echo "$out"; exit 1; }
+
+  python39:
+    # the Python that macOS Command Line Tools ship; both OS paths of setup.py must stay runnable on it
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+      - run: |
+          export HOME="$RUNNER_TEMP/ci-home"
+          mkdir -p "$HOME/.config/ghostty" && echo old > "$HOME/.config/ghostty/config"
+          python setup.py link --profile personal | grep -q "^moved      $HOME/.config/ghostty/config"
+          python setup.py link
+          python setup.py check
+          python setup.py --dry-run
 
   macos:
     runs-on: macos-latest
@@ -52,8 +67,7 @@ jobs:
         run: |
           export HOMEBREW_NO_AUTO_UPDATE=1
           HOMEBREW_BUNDLE_CASK_SKIP=$(brew bundle list --file os/Brewfile --cask | tr '\n' ' ') brew bundle --file os/Brewfile
-      - run: brew install -q lua && ruff check setup.py && luac -p lite-xl/init.lua
-      - run: shellcheck claude/statusline.sh kde/env.sh
+      - run: brew install -q lua && luac -p lite-xl/init.lua
       - run: zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/home.zshenv
       - run: plutil -lint os/macos/*.plist
       - name: link into a fresh HOME twice (move aside, prune), check, dry-run sync, start the real shell
