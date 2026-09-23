@@ -44,6 +44,7 @@ GHOSTTY_SHA256 = {
     "arm64": "73f384e62c419d7a7809d686bf579fea5e23f52742b34f70c74d6adf0e72f8ab",
 }
 NERD_FONTS_TAG = "v3.5.1"
+NERD_FONTS_SHA256 = "9f26650f142d69b33522b9b2c67e3f8ca21eafbde5e143d842dedbf2bb829bf5"  # CommitMono.zip
 CLAUDE_KEY_FPR = "31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE"
 CHROME_KEY_FPR = "EB4C1BFD4F042F6DDDCCEC917721F63BD38B4796"
 LITE_XL_TAG = "v2.1.8"
@@ -417,20 +418,24 @@ def linux_packages():
 def linux_font(tmp):
     step("font")
     fonts = HOME / ".local/share/fonts/CommitMonoNerdFont"
-    if fonts.is_dir():
-        say("ok", fonts)
+    if read_state("font") == NERD_FONTS_TAG and fonts.is_dir():
+        say("ok", f"nerd-fonts {NERD_FONTS_TAG}")
         return
     archive = tmp / "font.zip"
-    url = f"https://github.com/ryanoasis/nerd-fonts/releases/download/{NERD_FONTS_TAG}/CommitMono.zip"
-    download(url, archive)
+    fetch_verified(
+        f"https://github.com/ryanoasis/nerd-fonts/releases/download/{NERD_FONTS_TAG}/CommitMono.zip",
+        archive, NERD_FONTS_SHA256,
+    )
     if DRY:
         return
+    shutil.rmtree(fonts, ignore_errors=True)
     fonts.mkdir(parents=True)
     with zipfile.ZipFile(archive) as z:
         for member in z.namelist():
             if member not in ("LICENSE", "README.md"):
                 z.extract(member, fonts)
     run("fc-cache", "-f")
+    write_state("font", NERD_FONTS_TAG)
 
 
 def linux_ghostty(tmp):
@@ -742,10 +747,8 @@ def sync(profile):
 
     if OS == "Linux":
         linux_sync()
-    elif OS == "Darwin":
-        macos_sync()
     else:
-        sys.exit(f"unsupported OS: {OS}")
+        macos_sync()
 
     step("done")
     print(
