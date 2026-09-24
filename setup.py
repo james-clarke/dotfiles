@@ -7,6 +7,9 @@
     python3 setup.py check               verify every symlink; exit 1 on drift
     python3 setup.py --dry-run           print every command, run nothing
 
+Assumes git is already set up: you cloned this repo, so the SSH key and the git
+identity are yours to configure, not this script's.
+
 Profiles: `work` (Claude Code may edit, prompts kept) and `personal` (read-only Claude).
 The profile is remembered in ~/.local/state/dotfiles/profile after the first run.
 Standard library only; runs on the Python 3.9 that macOS Command Line Tools ship.
@@ -193,13 +196,14 @@ def same_content(path, text):
 
 
 def write_root_file(path, text):
-    """Write a root-owned file via sudo only when its content differs."""
+    """Write a root-owned file via sudo only when its content differs. True when it wrote."""
     if same_content(path, text):
         say("ok", path)
-        return
+        return False
     run("install", "-d", "-m", "0755", path.parent, sudo=True)
     run("tee", path, sudo=True, stdin=text, quiet=True)
     say("would write" if DRY else "wrote", path)
+    return True
 
 
 def download(url, dest):
@@ -459,9 +463,12 @@ def linux_ghostty(tmp):
 
 def linux_keyd():
     step("keyd: swap caps lock and left ctrl")
-    write_root_file(Path("/etc/keyd/default.conf"), KEYD_CONF)
+    changed = write_root_file(Path("/etc/keyd/default.conf"), KEYD_CONF)
     run("systemctl", "enable", "--now", "keyd", sudo=True)
-    run("keyd", "reload", sudo=True, check=False)
+    # Debian renames the binary to keyd.rvaiya, so `keyd reload` is not portable, and the unit
+    # has no ExecReload; a restart is what picks up a changed config on an already-running keyd.
+    if changed:
+        run("systemctl", "restart", "keyd", sudo=True, check=False)
 
 
 def linux_claude_code(tmp):
@@ -556,7 +563,6 @@ def linux_sync():
         linux_claude_code(tmp)
         linux_chrome(tmp)
         linux_login_shell()
-    github()
     if read_state("kde") != digest(kde_keys()):
         if in_plasma():
             kde_apply()
@@ -632,99 +638,12 @@ def macos_sync():
     for d in insecure:
         run("chmod", "g-w,o-w", d, check=False)
 
-    github()
-
     if read_state("defaults") != digest(MACOS_DEFAULTS):
         step("defaults")
         for row in MACOS_DEFAULTS:
             run("defaults", *row)
         run("killall", "Dock", "Finder", check=False)
         write_state("defaults", digest(MACOS_DEFAULTS))
-
-
-# ---------------------------------------------------------------- github
-
-
-def github():
-    """SSH key, GitHub login, key upload, git identity, SSH remote. Each part skips itself when done."""
-    step("github")
-    ssh_dir = HOME / ".ssh"
-    if not DRY:
-        ssh_dir.mkdir(mode=0o700, exist_ok=True)
-    cfg = ssh_dir / "config"
-    if cfg.exists() and "AddKeysToAgent" in cfg.read_text():
-        say("ok", cfg)
-    else:
-        # the agent: Debian's user ssh-agent.service + ksshaskpass (kde/env.sh); macOS launchd + Keychain
-        block = "Host *\n\tAddKeysToAgent yes\n" + ("\tUseKeychain yes\n" if OS == "Darwin" else "")
-        if not DRY:
-            with open(cfg, "a") as f:
-                f.write(block)
-        say("would write" if DRY else "wrote", cfg)
-
-    key = ssh_dir / "id_ed25519"
-    if key.exists():
-        say("ok", key)
-    else:
-        say("keygen", "choose a passphrase; the agent remembers it after the first use")
-        run("ssh-keygen", "-t", "ed25519", "-f", key, "-C", f"{query('id', '-un')}@{platform.node()}")
-
-    if DRY:
-        say("would run", "gh auth login (browser), gh ssh-key add, git identity prompt, ssh -T git@github.com")
-        return
-    status = query("gh", "auth", "status", "--hostname", "github.com")
-    if "Logged in" not in status:
-        say("login", "gh opens a browser and shows a one-time code; log in there")
-        run("gh", "auth", "login", "--hostname", "github.com", "--web", "--git-protocol", "ssh",
-            "--skip-ssh-key", "--scopes", "admin:public_key")
-    elif "admin:public_key" not in status:
-        say("login", "adding the admin:public_key scope so gh can upload the SSH key")
-        run("gh", "auth", "refresh", "--hostname", "github.com", "--scopes", "admin:public_key")
-    else:
-        say("ok", "gh logged in")
-
-    pub = key.with_suffix(".pub")
-    if not pub.exists():
-        say("later", f"{pub} missing; ssh-keygen was skipped")
-    else:
-        local = pub.read_text().split()[1]
-        if local in query("gh", "ssh-key", "list"):
-            say("ok", "key on GitHub")
-        else:
-            run("gh", "ssh-key", "add", pub, "--title", platform.node())
-
-    name = query("git", "config", "--global", "user.name")
-    email = query("git", "config", "--global", "user.email")
-    if name and email:
-        say("ok", f"{name} <{email}>")
-    elif not sys.stdin.isatty():
-        say("later", "git identity not set: git config --global user.name / user.email")
-    else:
-        # the GitHub profile name and noreply address are offered as defaults; Enter accepts them
-        fields = query("gh", "api", "user", "--jq", '[.login, .id, .name] | join("\\t")').split("\t")
-        login, uid, gh_name = (fields + ["", "", ""])[:3]
-        noreply = f"{uid}+{login}@users.noreply.github.com" if login else ""
-        name = name or input(f"git user.name [{gh_name or login}]: ").strip() or gh_name or login
-        email = email or input(f"git user.email [{noreply}]: ").strip() or noreply
-        if name and email:
-            # --file, not --global: ~/.config/git/config is a symlink into this repo and must stay identity-free
-            run("git", "config", "--file", HOME / ".gitconfig", "user.name", name)
-            run("git", "config", "--file", HOME / ".gitconfig", "user.email", email)
-            say("identity", f"{name} <{email}>")
-        else:
-            say("later", "git identity not set: git config --global user.name / user.email")
-
-    url = query("git", "-C", REPO, "remote", "get-url", "origin")
-    if url.startswith("https://github.com/"):
-        run("git", "-C", REPO, "remote", "set-url", "origin", "git@github.com:" + url[len("https://github.com/"):].removesuffix(".git"))
-    probe = subprocess.run(
-        ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "-o", "StrictHostKeyChecking=accept-new", "-T", "git@github.com"],
-        capture_output=True, text=True, check=False,
-    )
-    if "successfully authenticated" in probe.stderr:
-        say("ok", "SSH to GitHub works")
-    else:
-        say("later", "SSH to GitHub not working yet (passphrase key needs ssh-agent: ssh-add); check: ssh -T git@github.com")
 
 
 # ---------------------------------------------------------------- commands
