@@ -66,6 +66,10 @@ if ok then
           typeCheckingMode = "standard",
         },
       },
+      -- relative to the workspace root; projects without .venv fall back to system python
+      python = {
+        pythonPath = ".venv/bin/python",
+      },
     },
     verbose = false,
   }

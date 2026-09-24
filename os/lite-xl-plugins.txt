@@ -7,3 +7,4 @@ bracketmatch
 indentguide
 gitdiff_highlight
 editorconfig
+navigate
