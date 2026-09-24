@@ -58,6 +58,15 @@ if ok then
     language = "python",
     file_patterns = { "%.py$" },
     command = { bin "basedpyright-langserver", "--stdio" },
+    -- basedpyright defaults to "recommended", which floods Django code with
+    -- reportUnknown*/reportAny noise. "standard" matches upstream pyright.
+    settings = {
+      basedpyright = {
+        analysis = {
+          typeCheckingMode = "standard",
+        },
+      },
+    },
     verbose = false,
   }
   server {
