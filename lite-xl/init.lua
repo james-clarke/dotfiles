@@ -2,6 +2,7 @@
 local core = require "core"
 local config = require "core.config"
 local style = require "core.style"
+local common = require "core.common"
 
 -- first existing path wins; lets one file serve Linux (~/.local/share/fonts) and macOS (~/Library/Fonts)
 local function first_existing(paths)
@@ -21,14 +22,16 @@ local function bin(name)
   }
 end
 
--- look
+-- look (theme installed by setup.py via lpm, listed in os/lite-xl-plugins.txt)
+-- core.reload_module "colors.ayu-light"
+-- style.line_highlight = { common.color "#f0f0f0" }
 local mono = first_existing {
   HOME .. "/.local/share/fonts/CommitMonoNerdFont/CommitMonoNerdFontMono-Regular.otf",
   HOME .. "/Library/Fonts/CommitMonoNerdFontMono-Regular.otf",
 }
 if mono then
-  style.code_font = renderer.font.load(mono, 13 * SCALE)
-  style.font = renderer.font.load(mono, 12 * SCALE)
+  style.code_font = renderer.font.load(mono, 16 * SCALE)
+  style.font = renderer.font.load(mono, 13 * SCALE)
 end
 
 -- editing
@@ -36,18 +39,23 @@ config.indent_size = 4
 config.tab_type = "soft"
 config.line_limit = 100
 config.scroll_past_end = false
-config.ignore_files = {
-  "^%.git$", "^%.venv$", "^venv$", "^node_modules$", "^__pycache__$", "^%.mypy_cache$",
-  "^%.pytest_cache$", "^dist$", "^build$", "^%.DS_Store$",
-}
+-- extend the built-in list (.git, node_modules, __pycache__, *.o, *.so, *.pyc, ...) rather than replace it
+for _, p in ipairs { "^%.venv$", "^venv$", "^%.mypy_cache$", "^%.pytest_cache$", "^dist$", "^build$" } do
+  table.insert(config.ignore_files, p)
+end
 
 -- language servers (plugin `lsp`, installed by setup.py via lpm). Binaries come from apt, npm or
 -- Homebrew (clangd from Xcode CLT on macOS); a server whose binary is missing is not registered.
 -- Nothing formats on save; Alt+Shift+F asks the server.
+-- lintplus is only pulled in by lpm as an optional lsp dependency; with diagnostics off it does nothing
+config.plugins.lintplus = false
+config.plugins.toolbarview = false
 local ok, lsp = pcall(require, "plugins.lsp")
 if ok then
-  config.plugins.lsp.show_diagnostics = true
-  config.plugins.lsp.stop_unneeded_servers = true
+  -- LSP is for navigation and completion only: no inline squiggles, no status-bar count.
+  -- Alt+E still lists a document's diagnostics on demand.
+  config.plugins.lsp.show_diagnostics = false
+  core.status_view:hide_items("lsp:diagnostics")
 
   local function server(spec)
     if spec.command[1] then lsp.add_server(spec) end
@@ -58,20 +66,7 @@ if ok then
     language = "python",
     file_patterns = { "%.py$" },
     command = { bin "basedpyright-langserver", "--stdio" },
-    -- basedpyright defaults to "recommended", which floods Django code with
-    -- reportUnknown*/reportAny noise. "standard" matches upstream pyright.
-    settings = {
-      basedpyright = {
-        analysis = {
-          typeCheckingMode = "standard",
-        },
-      },
-      -- relative to the workspace root; projects without .venv fall back to system python
-      python = {
-        pythonPath = ".venv/bin/python",
-      },
-    },
-    verbose = false,
+    -- typeCheckingMode and pythonPath live in .lite_lsp.lua (see the note there)
   }
   server {
     name = "typescript",
@@ -83,27 +78,23 @@ if ok then
     },
     file_patterns = { "%.jsx?$", "%.[cm]js$", "%.tsx?$" },
     command = { bin "typescript-language-server", "--stdio" },
-    verbose = false,
   }
   server {
     name = "html",
     language = "html",
     file_patterns = { "%.html?$" },
     command = { bin "vscode-html-language-server", "--stdio" },
-    verbose = false,
   }
   server {
     name = "css",
     language = "css",
     file_patterns = { "%.css$" },
     command = { bin "vscode-css-language-server", "--stdio" },
-    verbose = false,
   }
   server {
     name = "clangd",
     language = "c",
     file_patterns = { "%.[ch]$" },
     command = { bin "clangd" },
-    verbose = false,
   }
 end

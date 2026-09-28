@@ -85,6 +85,7 @@ alias la='eza -a --icons=auto'
 alias cp='cp -iv' rm='rm -iv' mkdir='mkdir -pv' df='df -h'
 alias e='lite-xl'
 export MANPAGER="sh -c 'col -bx | bat -l man -p'" MANROFFOPT='-c'
+alias lx='lite-xl . &>/dev/null &'
 
 # --- widgets ---
 # proj: jump into any $DEV_DIR project (ctrl-x ctrl-p); feeds zoxide on landing
@@ -114,3 +115,8 @@ zle -N fzf-rg-widget
 bindkey '^X^G' fzf-rg-widget
 
 source "$ZDOTDIR/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+
+# Pyenv
+export PYENV_ROOT="$HOME/.pyenv"
+export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - zsh)"

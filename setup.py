@@ -271,6 +271,8 @@ def link_table(profile):
         "config/git/config": ".config/git/config",
         "config/git/ignore": ".config/git/ignore",
         "lite-xl/init.lua": ".config/lite-xl/init.lua",
+        "lite-xl/.lite_lsp.lua": ".config/lite-xl/.lite_lsp.lua",
+        "lite-xl/language_typescript.lua": ".config/lite-xl/plugins/language_typescript.lua",
         "ghostty/config": ".config/ghostty/config",
         "zsh": ".config/zsh",
         "zsh/home.zshenv": ".zshenv",

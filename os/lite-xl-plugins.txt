@@ -1,10 +1,8 @@
 lsp
 lsp_snippets
 snippets
-language_ts
 autoinsert
 bracketmatch
 indentguide
-gitdiff_highlight
-editorconfig
 navigate
+ayu-light
