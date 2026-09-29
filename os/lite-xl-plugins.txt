@@ -1,8 +1,0 @@
-lsp
-lsp_snippets
-snippets
-autoinsert
-bracketmatch
-indentguide
-navigate
-ayu-light

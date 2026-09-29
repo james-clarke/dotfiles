@@ -2,83 +2,47 @@ name: ci
 on: [push, pull_request]
 
 jobs:
-  linux:
+  lint:
     runs-on: ubuntu-latest
-    container: debian:trixie
     steps:
-      - run: apt-get update -q && apt-get install -y -q git ca-certificates lua5.4 pipx shellcheck
       - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - name: every package in os/apt-packages.txt exists on trixie
-        run: xargs -a os/apt-packages.txt apt-get install -y -q
-      - name: every npm package resolves; every binary init.lua asks for exists after apt + npm
-        run: |
-          export HOME=/tmp/ci-home PATH=/tmp/ci-home/.local/bin:$PATH npm_config_prefix=/tmp/ci-home/.local
-          xargs -a os/npm-packages.txt npm install -g
-          test -x "$HOME/.local/bin/prettier" && test -x "$HOME/.local/bin/tsc"
-          grep -o 'bin "[^"]*"' lite-xl/init.lua | cut -d'"' -f2 | while read -r b; do command -v "$b"; done
-      - run: pipx run ruff check setup.py
-      - run: shellcheck claude/statusline.sh kde/env.sh
-      - run: luac5.4 -p lite-xl/init.lua
-      - run: zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/home.zshenv
-      - run: jq empty claude/settings.work.json claude/settings.personal.json && git config -f config/git/config -l >/dev/null
-      - name: link into a fresh HOME twice (move aside, prune), check, dry-run sync, start the real shell
-        run: |
-          export HOME=/tmp/ci-home PATH=/tmp/ci-home/.local/bin:$PATH
-          mkdir -p "$HOME/.config/ghostty" && echo old > "$HOME/.config/ghostty/config"
-          python3 setup.py link --profile work | tee /tmp/link.log
-          grep -q "^moved      $HOME/.config/ghostty/config" /tmp/link.log
-          python3 setup.py link
-          python3 setup.py check
-          test "$(cat "$HOME/.local/state/dotfiles/profile")" = work
-          test "$(readlink "$HOME/.claude/settings.json")" = "$PWD/claude/settings.work.json"
-          python3 setup.py --dry-run
-          out=$(timeout 30 zsh -i -c exit 2>&1 | grep -v "can.t change option: zle" || true)
-          [ -z "$out" ] || { echo "$out"; exit 1; }
+      - run: shellcheck -s bash -e SC1090,SC1091 setup.sh bash/bashrc bash/bash_profile
+      - run: jq empty claude/settings.json vscode/settings.json
+      - run: git config -f git/config -l >/dev/null
 
-  python39:
-    # the Python that macOS Command Line Tools ship; both OS paths of setup.py must stay runnable on it
+  links:
+    # link() must be idempotent and must not clobber an existing .bak
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.9"
-      - run: |
+      - name: link into a fresh HOME, twice
+        run: |
           export HOME="$RUNNER_TEMP/ci-home"
-          mkdir -p "$HOME/.config/ghostty" && echo old > "$HOME/.config/ghostty/config"
-          python setup.py link --profile personal | grep -q "^moved      $HOME/.config/ghostty/config"
-          python setup.py link
-          python setup.py check
-          python setup.py --dry-run
+          mkdir -p "$HOME"
+          echo original > "$HOME/.bashrc"
+          echo previous > "$HOME/.bashrc.bak"
+
+          ./setup.sh --links-only
+          test "$(readlink "$HOME/.bashrc")" = "$PWD/bash/bashrc"
+          test "$(cat "$HOME/.bashrc.bak")" = previous          # existing .bak untouched
+          test "$(cat "$HOME"/.bashrc.bak.*)" = original        # displaced file kept
+          test "$(readlink "$HOME/.claude/settings.json")" = "$PWD/claude/settings.json"
+          test "$(readlink "$HOME/.config/git/config")" = "$PWD/git/config"
+
+          ./setup.sh --links-only                               # second run is a no-op
+          test "$(readlink "$HOME/.bashrc")" = "$PWD/bash/bashrc"
+          test "$(ls "$HOME"/.bashrc.bak.* | wc -l)" -eq 1
 
   macos:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - name: every tap, formula and cask in os/Brewfile resolves (casks skipped)
+      - name: every formula and cask setup.sh installs resolves
         run: |
           export HOMEBREW_NO_AUTO_UPDATE=1
-          HOMEBREW_BUNDLE_CASK_SKIP=$(brew bundle list --file os/Brewfile --cask | tr '\n' ' ') brew bundle --file os/Brewfile
-      - run: brew install -q lua && luac -p lite-xl/init.lua
-      - run: zsh -n zsh/.zshenv zsh/.zprofile zsh/.zshrc zsh/home.zshenv
-      - run: plutil -lint os/macos/*.plist
-      - name: link into a fresh HOME twice (move aside, prune), check, dry-run sync, start the real shell
-        run: |
-          export HOME="$RUNNER_TEMP/ci-home"
-          mkdir -p "$HOME/.config/ghostty" && echo old > "$HOME/.config/ghostty/config"
-          python3 setup.py link --profile personal | tee "$RUNNER_TEMP/link.log"
-          grep -q "^moved      $HOME/.config/ghostty/config" "$RUNNER_TEMP/link.log"
-          python3 setup.py link
-          python3 setup.py check
-          test "$(readlink "$HOME/.claude/settings.json")" = "$PWD/claude/settings.personal.json"
-          python3 setup.py --dry-run
-          out=$(zsh -i -c exit 2>&1 | grep -v "can.t change option: zle" || true)
-          [ -z "$out" ] || { echo "$out"; exit 1; }
+          for f in bash git gh jq node; do brew info --formula "$f" >/dev/null; done
+          for c in visual-studio-code google-chrome tailscale-app claude-code; do brew info --cask "$c" >/dev/null; done
+      - run: plutil -lint macos/*.plist

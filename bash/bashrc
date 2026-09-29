@@ -1,0 +1,35 @@
+# ~/.bashrc, shared by the Linux box and the Mac. ~/.bash_profile sources this.
+
+# Environment: every bash, including the non-interactive ones VS Code Remote-SSH starts.
+# Homebrew: /opt/homebrew on Apple Silicon, /usr/local on Intel.
+for _brew in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+  [ -x "$_brew" ] && eval "$("$_brew" shellenv)" && break
+done
+unset _brew
+case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
+export EDITOR="code --wait" VISUAL="code --wait"
+export npm_config_prefix="$HOME/.local"
+
+if [ -d "$HOME/.pyenv" ]; then
+  export PYENV_ROOT="$HOME/.pyenv"
+  case ":$PATH:" in *":$PYENV_ROOT/bin:"*) ;; *) export PATH="$PYENV_ROOT/bin:$PATH" ;; esac
+  eval "$(pyenv init - bash)"
+fi
+
+# Interactive shells only below.
+[[ $- == *i* ]] || return
+
+HISTSIZE=10000
+HISTFILESIZE=20000
+HISTCONTROL=ignoreboth
+shopt -s histappend checkwinsize
+
+[ -r /usr/share/bash-completion/bash_completion ] && . /usr/share/bash-completion/bash_completion
+
+if [ "$(uname)" = Darwin ]; then
+  export CLICOLOR=1
+else
+  alias ls='ls --color=auto' grep='grep --color=auto'
+fi
+
+PS1='\[\e[32m\]\u@\h\[\e[0m\]:\[\e[34m\]\w\[\e[0m\]\$ '

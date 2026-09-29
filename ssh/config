@@ -1,0 +1,4 @@
+# Mac only. debstation is the Linux box's Tailscale name.
+Host debstation
+  HostName debstation
+  User james

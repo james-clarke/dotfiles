@@ -1,0 +1,2 @@
+# Login shells (macOS Terminal, ssh, the KDE session) read this. Everything lives in ~/.bashrc.
+[ -f ~/.bashrc ] && . ~/.bashrc

@@ -1,0 +1,10 @@
+{
+  "telemetry.telemetryLevel": "off",
+  "chat.disableAIFeatures": true,
+  "workbench.startupEditor": "none",
+  "workbench.tips.enabled": false,
+  "extensions.ignoreRecommendations": true,
+  "update.showReleaseNotes": false,
+  "editor.minimap.enabled": false,
+  "remote.SSH.remotePlatform": { "debstation": "linux" }
+}
