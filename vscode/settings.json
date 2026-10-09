@@ -1,10 +1,75 @@
 {
   "telemetry.telemetryLevel": "off",
   "chat.disableAIFeatures": true,
-  "workbench.startupEditor": "none",
-  "workbench.tips.enabled": false,
+  "workbench.enableExperiments": false,
+  "workbench.settings.enableNaturalLanguageSearch": false,
   "extensions.ignoreRecommendations": true,
   "update.showReleaseNotes": false,
+  "workbench.startupEditor": "none",
+  "workbench.tips.enabled": false,
+  "workbench.welcomePage.walkthroughs.openOnInstall": false,
+  "window.density.layout": "compact",
+  "window.commandCenter": false,
+  "workbench.layoutControl.enabled": false,
+  "workbench.sideBar.location": "right",
+  "workbench.activityBar.compact": true,
   "editor.minimap.enabled": false,
-  "remote.SSH.remotePlatform": { "debstation": "linux" }
+  "explorer.compactFolders": false,
+  "explorer.confirmDragAndDrop": false,
+  "window.autoDetectColorScheme": true,
+  "workbench.preferredLightColorTheme": "Light+",
+  "workbench.preferredDarkColorTheme": "Dark+",
+  "editor.formatOnSave": true,
+  "editor.linkedEditing": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "files.trimTrailingWhitespace": false
+  },
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.openRepositoryInParentFolders": "never",
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "terminal.integrated.scrollback": 10000,
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.mypy_cache": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/.venv/**": true,
+    "**/venv/**": true,
+    "**/__pycache__/**": true,
+    "**/.mypy_cache/**": true,
+    "**/.pytest_cache/**": true,
+    "**/.ruff_cache/**": true,
+    "**/.next/**": true,
+    "**/dist/**": true,
+    "**/build/**": true,
+    "**/staticfiles/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.venv": true,
+    "**/venv": true,
+    "**/.next": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/staticfiles": true,
+    "**/package-lock.json": true,
+    "**/poetry.lock": true,
+    "**/uv.lock": true
+  },
+  "search.followSymlinks": false,
+  "remote.SSH.remotePlatform": {
+    "debstation": "linux",
+    "macstation": "darwin"
+  }
 }

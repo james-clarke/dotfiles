@@ -7,7 +7,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: shellcheck -s bash -e SC1090,SC1091 setup.sh bash/bashrc bash/bash_profile
-      - run: jq empty claude/settings.json vscode/settings.json
+      - run: jq empty claude/settings.json opencode/opencode.json vscode/settings.json
       - run: git config -f git/config -l >/dev/null
 
   links:
@@ -31,6 +31,8 @@ jobs:
           test "$(cat "$HOME"/.bashrc.bak.*)" = original        # displaced file kept
           test "$(readlink "$HOME/.claude/settings.json")" = "$PWD/claude/settings.json"
           test "$(readlink "$HOME/.config/git/config")" = "$PWD/git/config"
+          test "$(readlink "$HOME/.config/opencode/opencode.json")" = "$PWD/opencode/opencode.json"
+          test "$(readlink "$HOME/.ssh/config")" = "$PWD/ssh/config"
 
           ./setup.sh --links-only                               # second run is a no-op
           test "$(readlink "$HOME/.bashrc")" = "$PWD/bash/bashrc"

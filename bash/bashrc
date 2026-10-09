@@ -1,7 +1,5 @@
-# ~/.bashrc, shared by the Linux box and the Mac. ~/.bash_profile sources this.
+# ~/.bashrc
 
-# Environment: every bash, including the non-interactive ones VS Code Remote-SSH starts.
-# Homebrew: /opt/homebrew on Apple Silicon, /usr/local on Intel.
 for _brew in /opt/homebrew/bin/brew /usr/local/bin/brew; do
   [ -x "$_brew" ] && eval "$("$_brew" shellenv)" && break
 done

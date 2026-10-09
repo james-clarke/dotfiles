@@ -1,4 +1,10 @@
-# Mac only. debstation is the Linux box's Tailscale name.
+Host *
+  AddKeysToAgent yes
+
 Host debstation
   HostName debstation
+  User james
+
+Host macstation
+  HostName macstation
   User james
