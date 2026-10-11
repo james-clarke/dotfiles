@@ -79,7 +79,7 @@ if [ -n "$brew$cask$apt$npm" ]; then
   [ -n "$brew" ] && echo "  brew install$brew"
   [ -n "$cask" ] && echo "  brew install --cask$cask"
   [ -n "$apt" ]  && echo "  sudo apt install$apt      # third-party repos first: see README"
-  [ -n "$npm" ]  && echo "  npm_config_prefix=\"\$HOME/.local\" npm install -g$npm"
+  [ -n "$npm" ]  && { p=${npm# }; echo "  npm_config_prefix=\"\$HOME/.local\" npm install -g --allow-scripts=${p// /,}$npm"; }   # npm>=11.20 skips postinstall otherwise
   exit 1
 fi
 
