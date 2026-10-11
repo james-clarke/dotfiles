@@ -74,7 +74,7 @@ for c in "$@"; do
       else
         pkg tailscale - apt:tailscale
         pkg google-chrome - apt:google-chrome-stable
-        pkg keyd - apt:keyd
+        pkg /etc/keyd - apt:keyd   # debian names the binary keyd.rvaiya
         pkg /usr/sbin/sshd - apt:openssh-server
       fi ;;
     *) echo "unknown component: $c" >&2; exit 1 ;;
