@@ -25,7 +25,9 @@ jobs:
           echo original > "$HOME/.bashrc"
           echo previous > "$HOME/.bashrc.bak"
 
-          ./setup.sh --links-only
+          # opencode is never on a runner: expect exactly exit 1 with the missing-tools report
+          run() { rc=0; out=$(./setup.sh bash git ssh vscode opencode claude 2>&1) || rc=$?; echo "$out"; test $rc -eq 1; echo "$out" | grep -q "Missing. Install"; }
+          run
           test "$(readlink "$HOME/.bashrc")" = "$PWD/bash/bashrc"
           test "$(cat "$HOME/.bashrc.bak")" = previous          # existing .bak untouched
           test "$(cat "$HOME"/.bashrc.bak.*)" = original        # displaced file kept
@@ -33,8 +35,10 @@ jobs:
           test "$(readlink "$HOME/.config/git/config")" = "$PWD/git/config"
           test "$(readlink "$HOME/.config/opencode/opencode.json")" = "$PWD/opencode/opencode.json"
           test "$(readlink "$HOME/.ssh/config")" = "$PWD/ssh/config"
+          if [ "$(uname)" = Darwin ]; then vs="$HOME/Library/Application Support/Code/User/settings.json"; else vs="$HOME/.config/Code/User/settings.json"; fi
+          test "$(readlink "$vs")" = "$PWD/vscode/settings.json"
 
-          ./setup.sh --links-only                               # second run is a no-op
+          run                                                   # second run is a no-op
           test "$(readlink "$HOME/.bashrc")" = "$PWD/bash/bashrc"
           test "$(ls "$HOME"/.bashrc.bak.* | wc -l)" -eq 1
 
@@ -45,6 +49,6 @@ jobs:
       - name: every formula and cask setup.sh installs resolves
         run: |
           export HOMEBREW_NO_AUTO_UPDATE=1
-          for f in bash git gh jq node; do brew info --formula "$f" >/dev/null; done
+          for f in bash git gh node; do brew info --formula "$f" >/dev/null; done
           for c in visual-studio-code google-chrome tailscale-app claude-code; do brew info --cask "$c" >/dev/null; done
       - run: plutil -lint macos/*.plist
