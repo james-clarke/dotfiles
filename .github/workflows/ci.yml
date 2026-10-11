@@ -11,7 +11,7 @@ jobs:
       - run: git config -f git/config -l >/dev/null
 
   links:
-    # link() must be idempotent and must not clobber an existing .bak
+    # link() must replace existing files and be idempotent
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -23,14 +23,11 @@ jobs:
           export HOME="$RUNNER_TEMP/ci-home"
           mkdir -p "$HOME"
           echo original > "$HOME/.bashrc"
-          echo previous > "$HOME/.bashrc.bak"
 
           # opencode is never on a runner: expect exactly exit 1 with the missing-tools report
           run() { rc=0; out=$(./setup.sh bash git ssh vscode opencode claude 2>&1) || rc=$?; echo "$out"; test $rc -eq 1; echo "$out" | grep -q "Missing. Install"; }
           run
           test "$(readlink "$HOME/.bashrc")" = "$PWD/bash/bashrc"
-          test "$(cat "$HOME/.bashrc.bak")" = previous          # existing .bak untouched
-          test "$(cat "$HOME"/.bashrc.bak.*)" = original        # displaced file kept
           test "$(readlink "$HOME/.claude/settings.json")" = "$PWD/claude/settings.json"
           test "$(readlink "$HOME/.config/git/config")" = "$PWD/git/config"
           test "$(readlink "$HOME/.config/opencode/opencode.json")" = "$PWD/opencode/opencode.json"
@@ -40,7 +37,7 @@ jobs:
 
           run                                                   # second run is a no-op
           test "$(readlink "$HOME/.bashrc")" = "$PWD/bash/bashrc"
-          test "$(ls "$HOME"/.bashrc.bak.* | wc -l)" -eq 1
+          test -z "$(ls "$HOME"/.bashrc.bak* 2>/dev/null)"       # no backups made
 
   macos:
     runs-on: macos-latest

@@ -16,15 +16,8 @@ if [ $# -eq 0 ]; then
 fi
 [ "$1" = all ] && set -- bash git ssh vscode opencode claude system
 
-# link repo/file target: existing real files are moved aside, never deleted
-link() {
-  mkdir -p "$(dirname "$2")"
-  if [ -e "$2" ] && [ ! -L "$2" ]; then
-    bak="$2.bak"; [ -e "$bak" ] && bak="$2.bak.$(date +%Y%m%d%H%M%S)"
-    mv "$2" "$bak"; echo "moved      $2 -> $bak"
-  fi
-  ln -sfn "$PWD/$1" "$2"
-}
+# link repo/file target: replaces whatever is there, no backups
+link() { mkdir -p "$(dirname "$2")"; ln -sfn "$PWD/$1" "$2"; }
 
 # pkg cmd-or-path mac-spec linux-spec   (spec = manager:package)
 brew="" cask="" apt="" npm=""
